@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<!--
+    CloudNest Enterprise — Sidebar Fragment
+    Replaces Bootstrap navbar with a full left-sidebar shell layout.
+    Include in every app page with: th:replace="~{fragments/header :: appShellStart}"
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudNest — Distributed Infrastructure Platform</title>
+
+    <!-- Google Fonts: Inter + JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- CloudNest Design System -->
+    <link th:href="@{/css/design-system.css}" rel="stylesheet">
+    <link th:href="@{/css/animations.css}" rel="stylesheet">
+
+    <!-- Lucide Icons (CDN) -->
+    <script src="https://unpkg.com/lucide@0.325.0/dist/umd/lucide.min.js"></script>
+
+    <!-- GSAP + ScrollTrigger (CDN) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+</head>
+<body>
+
+<!-- ============================================================
+     APP SHELL START FRAGMENT
+     This fragment opens the .cn-app-shell div. Every page using
+     this fragment MUST include the appShellEnd fragment to close it.
+     ============================================================ -->
+<th:block th:fragment="appShellStart">
+
+<!-- Background Decorative Orbs -->
+<div class="cn-bg-orbs" aria-hidden="true">
+    <div class="cn-orb cn-orb-1"></div>
+    <div class="cn-orb cn-orb-2"></div>
+    <div class="cn-orb cn-orb-3"></div>
+</div>
+
+<!-- Toast Container -->
+<div class="cn-toast-container" id="cnToastContainer" aria-live="polite"></div>
+
+<!-- Command Palette -->
+<div class="cn-command-palette" id="cnCommandPalette" role="dialog" aria-label="Command palette" aria-modal="true">
+    <div class="cn-command-box">
+        <div class="cn-command-input-wrap">
+            <i data-lucide="search" class="cmd-search-icon" style="width:18px;height:18px;"></i>
+            <input
+                type="text"
+                class="cn-command-input"
+                id="cnCommandInput"
+                placeholder="Search pages, actions..."
+                autocomplete="off"
+                spellcheck="false"
+            >
+        </div>
+        <div class="cn-command-list" id="cnCommandList">
+
+            <div class="cn-command-group-label">Navigation</div>
+
+            <a href="/dashboard" class="cn-command-item" data-search="dashboard command center overview">
+                <div class="cn-command-item-icon"><i data-lucide="layout-dashboard" style="width:14px;height:14px;"></i></div>
+                <span class="cn-command-item-text">Dashboard</span>
+                <span class="cn-command-item-kbd">Command Center</span>
+            </a>
+
+            <a href="/files" class="cn-command-item" data-search="files explorer cloud storage upload">
+                <div class="cn-command-item-icon"><i data-lucide="folder-open" style="width:14px;height:14px;"></i></div>
+                <span class="cn-command-item-text">Files</span>
+                <span class="cn-command-item-kbd">Cloud Explorer</span>
+            </a>
+
+            <a href="/nodes" class="cn-command-item" data-search="nodes topology infrastructure servers alpha beta gamma delta">
+                <div class="cn-command-item-icon"><i data-lucide="server" style="width:14px;height:14px;"></i></div>
+                <span class="cn-command-item-text">Storage Nodes</span>
+                <span class="cn-command-item-kbd">Topology</span>
+            </a>
+
+            <a href="/replication" class="cn-command-item" data-search="replication sync data transfer">
+                <div class="cn-command-item-icon"><i data-lucide="git-branch" style="width:14px;height:14px;"></i></div>
+                <span class="cn-command-item-text">Replication</span>
+                <span class="cn-command-item-kbd">Data Sync</span>
+            </a>
+
+            <a href="/deduplication" class="cn-command-item" data-search="deduplication sha256 hash duplicates savings">
+                <div class="cn-command-item-icon"><i data-lucide="fingerprint" style="width:14px;height:14px;"></i></div>
+                <span class="cn-command-item-text">Deduplication Center</span>
+                <span class="cn-command-item-kbd">SHA-256</span>
+            </a>
+
+            <div class="cn-command-group-label">Observability</div>
+
+            <a href="/network" class="cn-command-item" data-search="network activity bandwidth traffic latency">
+                <div class="cn-command-item-icon"><i data-lucide="activity" style="width:14px;height:14px;"></i></div>
+                <span class="cn-command-item-text">Network Activity</span>
+                <span class="cn-command-item-kbd">Live</span>
+            </a>
+
+            <a href="/analytics" class="cn-command-item" data-search="analytics charts storage growth trends">
+                <div class="cn-command-item-icon"><i data-lucide="bar-chart-2" style="width:14px;height:14px;"></i></div>
+                <span class="cn-command-item-text">Analytics</span>
+                <span class="cn-command-item-kbd">Charts</span>
+            </a>
+
+            <a href="/monitoring" class="cn-command-item" data-search="monitoring system health alerts status">
+                <div class="cn-command-item-icon"><i data-lucide="monitor" style="width:14px;height:14px;"></i></div>
+                <span class="cn-command-item-text">Monitoring</span>
+                <span class="cn-command-item-kbd">Alerts</span>
+            </a>
+
+            <div class="cn-command-group-label">Actions</div>
+
+            <div class="cn-command-item" id="cmdUploadAction" data-search="upload file add new" style="cursor:pointer;">
+                <div class="cn-command-item-icon"><i data-lucide="upload-cloud" style="width:14px;height:14px;"></i></div>
+                <span class="cn-command-item-text">Upload File</span>
+                <span class="cn-command-item-kbd">⇧U</span>
+            </div>
+
+            <a href="/trash" class="cn-command-item" data-search="trash recycle bin deleted files restore">
+                <div class="cn-command-item-icon"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></div>
+                <span class="cn-command-item-text">Recycle Bin</span>
+            </a>
+
+        </div>
+        <div class="cn-command-footer">
+            <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+            <span><kbd>↵</kbd> Open</span>
+            <span><kbd>Esc</kbd> Close</span>
+        </div>
+    </div>
+</div>
+<div class="cn-sidebar-overlay" id="cnSidebarOverlay" aria-hidden="true"></div>
+
+<!-- App Shell -->
+<div class="cn-app-shell">
+
+    <!-- ================================================================
+         LEFT SIDEBAR
+         ================================================================ -->
+    <aside class="cn-sidebar" id="cnSidebar" role="navigation" aria-label="Main navigation">
+
+        <!-- Collapse toggle -->
+        <button class="cn-sidebar-toggle" id="cnSidebarToggle" title="Toggle sidebar" aria-label="Toggle sidebar">
+            <i data-lucide="chevron-left" style="width:12px;height:12px;" id="cnToggleIcon"></i>
+        </button>
+
+        <!-- Logo Zone -->
+        <div class="cn-sidebar-header">
+            <a href="/dashboard" style="display:flex;align-items:center;gap:0.75rem;text-decoration:none;">
+                <div class="cn-logo-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div class="cn-logo-text">
+                    <div class="cn-logo-wordmark">CloudNest</div>
+                    <div class="cn-logo-tagline">Infrastructure Platform</div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Command Trigger -->
+        <div class="cn-sidebar-search">
+            <button class="cn-command-trigger" id="cnCommandTrigger" aria-label="Open command palette (Ctrl+K)">
+                <i data-lucide="search" class="cmd-icon" style="width:14px;height:14px;"></i>
+                <span class="cmd-text">Search or jump to...</span>
+                <span class="cmd-kbd">
+                    <kbd>Ctrl</kbd><kbd>K</kbd>
+                </span>
+            </button>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="cn-sidebar-nav" id="cnSidebarNav">
+
+            <!-- Workspace Section -->
+            <div class="cn-nav-section">
+                <div class="cn-nav-section-label">Workspace</div>
+
+                <a href="/dashboard" class="cn-nav-item" id="nav-dashboard" th:classappend="${activePage == 'dashboard'} ? 'active'">
+                    <span class="cn-nav-icon"><i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i></span>
+                    <span class="cn-nav-label">Dashboard</span>
+                </a>
+
+                <a href="/files" class="cn-nav-item" id="nav-files" th:classappend="${activePage == 'files'} ? 'active'">
+                    <span class="cn-nav-icon"><i data-lucide="folder-open" style="width:16px;height:16px;"></i></span>
+                    <span class="cn-nav-label">Files</span>
+                </a>
+
+                <a href="/trash" class="cn-nav-item danger" id="nav-trash" th:classappend="${activePage == 'trash'} ? 'active'">
+                    <span class="cn-nav-icon"><i data-lucide="trash-2" style="width:16px;height:16px;"></i></span>
+                    <span class="cn-nav-label">Recycle Bin</span>
+                </a>
+            </div>
+
+            <!-- Infrastructure Section -->
+            <div class="cn-nav-section">
+                <div class="cn-nav-section-label">Infrastructure</div>
+
+                <a href="/nodes" class="cn-nav-item" id="nav-nodes" th:classappend="${activePage == 'nodes'} ? 'active'">
+                    <span class="cn-nav-icon"><i data-lucide="server" style="width:16px;height:16px;"></i></span>
+                    <span class="cn-nav-label">Storage Nodes</span>
+                </a>
+
+                <a href="/replication" class="cn-nav-item" id="nav-replication" th:classappend="${activePage == 'replication'} ? 'active'">
+                    <span class="cn-nav-icon"><i data-lucide="git-branch" style="width:16px;height:16px;"></i></span>
+                    <span class="cn-nav-label">Replication</span>
+                </a>
+
+                <a href="/deduplication" class="cn-nav-item" id="nav-dedup" th:classappend="${activePage == 'deduplication'} ? 'active'">
+                    <span class="cn-nav-icon"><i data-lucide="fingerprint" style="width:16px;height:16px;"></i></span>
+                    <span class="cn-nav-label">Deduplication</span>
+                </a>
+            </div>
+
+            <!-- Observability Section -->
+            <div class="cn-nav-section">
+                <div class="cn-nav-section-label">Observability</div>
+
+                <a href="/network" class="cn-nav-item" id="nav-network" th:classappend="${activePage == 'network'} ? 'active'">
+                    <span class="cn-nav-icon"><i data-lucide="activity" style="width:16px;height:16px;"></i></span>
+                    <span class="cn-nav-label">Network Activity</span>
+                </a>
+
+                <a href="/analytics" class="cn-nav-item" id="nav-analytics" th:classappend="${activePage == 'analytics'} ? 'active'">
+                    <span class="cn-nav-icon"><i data-lucide="bar-chart-2" style="width:16px;height:16px;"></i></span>
+                    <span class="cn-nav-label">Analytics</span>
+                </a>
+
+                <a href="/monitoring" class="cn-nav-item" id="nav-monitoring" th:classappend="${activePage == 'monitoring'} ? 'active'">
+                    <span class="cn-nav-icon"><i data-lucide="monitor" style="width:16px;height:16px;"></i></span>
+                    <span class="cn-nav-label">Monitoring</span>
+                </a>
+            </div>
+
+            <!-- Administration Section (Admin only) -->
+            <div class="cn-nav-section" sec:authorize="hasRole('ROLE_ADMIN')">
+                <div class="cn-nav-section-label">Administration</div>
+
+                <a href="/admin/dashboard" class="cn-nav-item" id="nav-admin" th:classappend="${activePage == 'admin'} ? 'active'">
+                    <span class="cn-nav-icon"><i data-lucide="shield-check" style="width:16px;height:16px;"></i></span>
+                    <span class="cn-nav-label">Admin Panel</span>
+                </a>
+            </div>
+
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="cn-sidebar-footer">
+
+            <!-- Storage Quota (from backend data if available) -->
+            <div class="cn-sidebar-quota" id="sidebarQuota">
+                <div class="cn-quota-label">
+                    <span>Storage</span>
+                    <span th:if="${dashboard != null}"
+                          th:text="${dashboard.formattedStorage} + ' / ' + ${dashboard.formattedQuota}">
+                        -- / 1 GB
+                    </span>
+                    <span th:unless="${dashboard != null}">1 GB Quota</span>
+                </div>
+                <div class="cn-quota-track">
+                    <div class="cn-quota-fill"
+                         id="sidebarQuotaFill"
+                         th:style="${dashboard != null} ? 'width: ' + ${dashboard.quotaPercentage} + '%' : 'width: 0%'">
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Profile -->
+            <div class="cn-sidebar-user" id="sidebarUserMenu">
+                <div class="cn-user-avatar" id="userAvatar">
+                    <span sec:authentication="name" id="userAvatarInitial">U</span>
+                </div>
+                <div class="cn-user-info">
+                    <div class="cn-user-name" sec:authentication="name">User</div>
+                    <div class="cn-user-role" sec:authorize="hasRole('ROLE_ADMIN')">Administrator</div>
+                    <div class="cn-user-role" sec:authorize="hasRole('ROLE_USER')">Standard User</div>
+                </div>
+
+                <!-- Logout Form -->
+                <form th:action="@{/logout}" method="post" style="display:inline;margin:0;">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button type="submit" class="cn-logout-btn" title="Sign out" aria-label="Sign out">
+                        <i data-lucide="log-out" style="width:14px;height:14px;"></i>
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- ================================================================
+         MAIN CONTENT AREA
+         Pages inject their content here; closed by appShellEnd fragment
+         ================================================================ -->
+    <div class="cn-main-content" id="cnMainContent">
+
+        <!-- TOPBAR -->
+        <header class="cn-topbar">
+            <div class="cn-topbar-left">
+                <!-- Mobile menu button -->
+                <button class="cn-mobile-menu-btn" id="cnMobileMenuBtn" aria-label="Open menu">
+                    <i data-lucide="menu" style="width:20px;height:20px;"></i>
+                </button>
+
+                <!-- Page title (set per-page via th:with) -->
+                <div>
+                    <div class="cn-page-title" id="cnPageTitle">CloudNest</div>
+                </div>
+
+                <!-- System Status Pill -->
+                <div class="cn-status-pill" id="systemStatusPill">
+                    <span class="cn-status-dot"></span>
+                    All Systems Operational
+                </div>
+            </div>
+
+            <div class="cn-topbar-right">
+                <!-- Search bar (leads to /files/search) -->
+                <form action="/files/search" method="get" class="cn-topbar-search">
+                    <i data-lucide="search" class="cn-topbar-search-icon" style="width:14px;height:14px;"></i>
+                    <input type="text" name="query" placeholder="Search files..." aria-label="Search files">
+                </form>
+
+                <!-- Notifications bell (static for now) -->
+                <button class="cn-btn cn-btn-icon" title="Notifications" aria-label="Notifications" style="position:relative;">
+                    <i data-lucide="bell" style="width:16px;height:16px;"></i>
+                    <span style="position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--blue-500);border-radius:50%;border:1.5px solid var(--bg-surface);"></span>
+                </button>
+
+            </div>
+        </header>
+
+        <!-- Page content starts here — pages inject their cn-workspace div -->
+
+</th:block>
+
+<!-- ============================================================
+     APP SHELL END FRAGMENT
+     Every page closes the shell with this fragment.
+     ============================================================ -->
+<th:block th:fragment="appShellEnd">
+    </div><!-- /.cn-main-content -->
+</div><!-- /.cn-app-shell -->
+
+<!-- ────────────────────────────────────────────────
+     LUCIDE ICON INIT
+     ──────────────────────────────────────────────── -->
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
+
+<!-- Core App JS -->
+<script th:src="@{/js/app.js}"></script>
+<script th:src="@{/js/gsap-animations.js}"></script>
+
+</th:block>
+
+
+<!-- ============================================================
+     LEGACY SUPPORT — old th:replace="~{fragments/header :: header}"
+     For any templates not yet updated.
+     ============================================================ -->
+<nav th:fragment="header" style="display:none;">
+    <!-- Legacy placeholder — update template to use appShellStart/End -->
+</nav>
+
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudNest - Shared File</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link th:href="@{/css/design-system.css}" rel="stylesheet">
+    <link th:href="@{/css/animations.css}" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@0.325.0/dist/umd/lucide.min.js"></script>
+</head>
+<body class="cn-auth-body">
+<main class="cn-public-shell">
+    <section class="cn-public-card cn-reveal">
+        <div class="cn-public-brand">
+            <div class="cn-logo-mark" aria-hidden="true">
+                <i data-lucide="cloud" style="width:22px;height:22px;"></i>
+            </div>
+            <div>
+                <div class="cn-logo-wordmark">CloudNest</div>
+                <div class="cn-logo-tagline">Secure Shared File</div>
+            </div>
+        </div>
+
+        <div th:if="${error}" class="cn-public-state">
+            <div class="cn-empty-icon danger">
+                <i data-lucide="shield-alert" style="width:28px;height:28px;"></i>
+            </div>
+            <h1 class="cn-public-title">Link unavailable</h1>
+            <p class="cn-public-copy" th:text="${error}">This shared link is not available.</p>
+            <a th:href="@{/login}" class="cn-btn cn-btn-primary">
+                <i data-lucide="log-in" style="width:15px;height:15px;"></i>
+                Go to Login
+            </a>
+        </div>
+
+        <div th:unless="${error}" class="cn-public-state">
+            <div class="cn-empty-icon">
+                <i data-lucide="file-down" style="width:30px;height:30px;"></i>
+            </div>
+            <h1 class="cn-public-title" th:text="${fileName}">filename.pdf</h1>
+            <div class="cn-public-meta">
+                <div>
+                    <span>Size</span>
+                    <strong th:text="${fileSize}">0 B</strong>
+                </div>
+                <div>
+                    <span>Type</span>
+                    <strong th:text="${fileType}">type</strong>
+                </div>
+                <div>
+                    <span>Shared By</span>
+                    <strong th:text="${sharedBy}">user</strong>
+                </div>
+                <div>
+                    <span>Expires</span>
+                    <strong th:text="${#temporals.format(expiresAt, 'MMM dd, yyyy HH:mm')}">date</strong>
+                </div>
+            </div>
+            <a th:href="@{/share/download/{token}(token=${token})}" class="cn-btn cn-btn-primary cn-btn-lg">
+                <i data-lucide="download" style="width:16px;height:16px;"></i>
+                Download File
+            </a>
+        </div>
+    </section>
+</main>
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudNest - Server Error</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link th:href="@{/css/design-system.css}" rel="stylesheet">
+    <link th:href="@{/css/animations.css}" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@0.325.0/dist/umd/lucide.min.js"></script>
+</head>
+<body class="cn-auth-body">
+<main class="cn-public-shell">
+    <section class="cn-public-card cn-reveal">
+        <div class="cn-public-state">
+            <div class="cn-empty-icon danger">
+                <i data-lucide="triangle-alert" style="width:30px;height:30px;"></i>
+            </div>
+            <p class="cn-public-kicker">500</p>
+            <h1 class="cn-public-title">Server error</h1>
+            <p class="cn-public-copy">Something went wrong on our end. Please go back or return to the dashboard.</p>
+            <div class="cn-public-actions">
+                <button type="button" onclick="window.history.back()" class="cn-btn cn-btn-secondary">
+                    <i data-lucide="arrow-left" style="width:15px;height:15px;"></i>
+                    Go Back
+                </button>
+                <a th:href="@{/dashboard}" class="cn-btn cn-btn-primary">
+                    <i data-lucide="layout-dashboard" style="width:15px;height:15px;"></i>
+                    Dashboard
+                </a>
+            </div>
+        </div>
+    </section>
+</main>
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+</body>
+</html>

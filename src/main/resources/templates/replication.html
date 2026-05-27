@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CloudNest Replication — Cross-node data synchronization status">
+    <title>CloudNest — Replication</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link th:href="@{/css/design-system.css}" rel="stylesheet">
+    <link th:href="@{/css/animations.css}" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@0.325.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+    <style>
+        /* SVG Replication Graph */
+        .cn-replication-svg-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            position: relative;
+            overflow: hidden;
+        }
+        #replicationSvg {
+            width: 100%;
+            height: 320px;
+            display: block;
+        }
+        .cn-rep-node-label {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            fill: rgba(255,255,255,0.8);
+        }
+        .cn-rep-edge {
+            stroke: rgba(59,130,246,0.25);
+            stroke-width: 1.5;
+            fill: none;
+            stroke-dasharray: 6 4;
+        }
+        .cn-rep-packet {
+            fill: #60A5FA;
+            opacity: 0;
+        }
+
+        /* Queue log */
+        .cn-queue-row {
+            display: grid;
+            grid-template-columns: 24px 1fr 80px 60px 80px;
+            gap: var(--space-3);
+            align-items: center;
+            padding: var(--space-3) var(--space-4);
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: var(--text-xs);
+        }
+        .cn-queue-row:last-child { border-bottom: none; }
+        .cn-queue-row:hover { background: var(--bg-glass); }
+
+        /* Replication factor ring */
+        .cn-rep-ring-wrap {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto;
+        }
+        .cn-rep-ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .cn-rep-ring-label {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+        }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: appShellStart}"></div>
+
+<div class="cn-workspace">
+
+    <!-- Page Header -->
+    <div class="cn-flex cn-justify-between cn-items-center cn-mb-6 cn-reveal">
+        <div>
+            <h1 style="font-size:var(--text-2xl);font-weight:var(--fw-bold);letter-spacing:-0.03em;color:var(--text-primary);margin-bottom:4px;">
+                Replication
+            </h1>
+            <p style="font-size:var(--text-sm);color:var(--text-muted);">
+                Cross-node data synchronization · Replication factor 3
+            </p>
+        </div>
+        <span class="cn-badge online" style="padding:6px 14px;">
+            <span class="cn-status-dot"></span>
+            All Replicas Synced
+        </span>
+    </div>
+
+    <!-- Metrics -->
+    <div class="cn-metrics-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:var(--space-5);">
+        <div class="cn-metric-card cn-reveal">
+            <div class="cn-metric-icon green"><i data-lucide="check-circle" style="width:17px;height:17px;"></i></div>
+            <div class="cn-metric-value">99.7<span style="font-size:var(--text-lg);color:var(--text-muted);font-weight:500;">%</span></div>
+            <div class="cn-metric-label">Replication Rate</div>
+            <div class="cn-metric-trend up"><i data-lucide="trending-up" style="width:12px;height:12px;"></i> Excellent</div>
+        </div>
+        <div class="cn-metric-card cn-reveal cn-delay-100">
+            <div class="cn-metric-icon blue"><i data-lucide="git-branch" style="width:17px;height:17px;"></i></div>
+            <div class="cn-metric-value">3x</div>
+            <div class="cn-metric-label">Replication Factor</div>
+            <div class="cn-metric-trend neutral"><i data-lucide="copy" style="width:12px;height:12px;"></i> All 3 nodes</div>
+        </div>
+        <div class="cn-metric-card cn-reveal cn-delay-200">
+            <div class="cn-metric-icon cyan"><i data-lucide="clock" style="width:17px;height:17px;"></i></div>
+            <div class="cn-metric-value">2.3<span style="font-size:var(--text-lg);color:var(--text-muted);font-weight:500;"> ms</span></div>
+            <div class="cn-metric-label">Sync Lag</div>
+            <div class="cn-metric-trend up"><i data-lucide="zap" style="width:12px;height:12px;"></i> Near real-time</div>
+        </div>
+        <div class="cn-metric-card cn-reveal cn-delay-300">
+            <div class="cn-metric-icon yellow"><i data-lucide="activity" style="width:17px;height:17px;"></i></div>
+            <div class="cn-metric-value" data-counter="0" id="syncCounter">0</div>
+            <div class="cn-metric-label">Syncs Today</div>
+            <div class="cn-metric-trend up"><i data-lucide="repeat" style="width:12px;height:12px;"></i> Continuous</div>
+        </div>
+    </div>
+
+    <!-- SVG Graph + Factor Rings -->
+    <div style="display:grid;grid-template-columns:1fr 280px;gap:var(--space-5);margin-bottom:var(--space-5);">
+
+        <!-- SVG Replication Flow -->
+        <div class="cn-replication-svg-wrap cn-reveal">
+            <div style="font-size:var(--text-sm);font-weight:var(--fw-semibold);color:var(--text-secondary);margin-bottom:var(--space-4);display:flex;align-items:center;gap:var(--space-2);">
+                <i data-lucide="git-branch" style="width:14px;height:14px;color:var(--blue-400);"></i>
+                Live Replication Flow
+            </div>
+            <svg id="replicationSvg" viewBox="0 0 600 280">
+                <!-- Background grid lines -->
+                <defs>
+                    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                        <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+                    </pattern>
+                    <radialGradient id="nodeGradAlpha" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.9"/>
+                        <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0.7"/>
+                    </radialGradient>
+                    <radialGradient id="nodeGradBeta" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.9"/>
+                        <stop offset="100%" stop-color="#6d28d9" stop-opacity="0.7"/>
+                    </radialGradient>
+                    <radialGradient id="nodeGradGamma" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#22C55E" stop-opacity="0.9"/>
+                        <stop offset="100%" stop-color="#16a34a" stop-opacity="0.7"/>
+                    </radialGradient>
+                    <filter id="nodeGlow">
+                        <feGaussianBlur stdDeviation="3" result="blur"/>
+                        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                </defs>
+                <rect width="600" height="280" fill="url(#grid)"/>
+
+                <!-- Edges (dashed animated) -->
+                <!-- Alpha ↔ Beta -->
+                <line x1="150" y1="90" x2="450" y2="90" class="cn-rep-edge" id="edge-ab"/>
+                <!-- Alpha ↔ Gamma -->
+                <line x1="150" y1="90" x2="300" y2="220" class="cn-rep-edge" id="edge-ag"/>
+                <!-- Beta ↔ Gamma -->
+                <line x1="450" y1="90" x2="300" y2="220" class="cn-rep-edge" id="edge-bg"/>
+
+                <!-- Data packets (animated by JS) -->
+                <circle class="cn-rep-packet" id="pkt-ab-1" r="5" cx="150" cy="90"/>
+                <circle class="cn-rep-packet" id="pkt-ab-2" r="4" cx="450" cy="90" fill="#8B5CF6"/>
+                <circle class="cn-rep-packet" id="pkt-ag-1" r="5" cx="150" cy="90" fill="#22C55E"/>
+                <circle class="cn-rep-packet" id="pkt-bg-1" r="4" cx="450" cy="90" fill="#22C55E"/>
+
+                <!-- Node Alpha -->
+                <circle cx="150" cy="90" r="36" fill="url(#nodeGradAlpha)" filter="url(#nodeGlow)" opacity="0.9"/>
+                <circle cx="150" cy="90" r="36" fill="none" stroke="#3B82F6" stroke-width="1.5" opacity="0.4"/>
+                <text x="150" y="86" class="cn-rep-node-label" text-anchor="middle">NODE</text>
+                <text x="150" y="100" class="cn-rep-node-label" text-anchor="middle" fill="#60A5FA">ALPHA</text>
+
+                <!-- Node Beta -->
+                <circle cx="450" cy="90" r="36" fill="url(#nodeGradBeta)" filter="url(#nodeGlow)" opacity="0.9"/>
+                <circle cx="450" cy="90" r="36" fill="none" stroke="#8B5CF6" stroke-width="1.5" opacity="0.4"/>
+                <text x="450" y="86" class="cn-rep-node-label" text-anchor="middle">NODE</text>
+                <text x="450" y="100" class="cn-rep-node-label" text-anchor="middle" fill="#A78BFA">BETA</text>
+
+                <!-- Node Gamma -->
+                <circle cx="300" cy="220" r="36" fill="url(#nodeGradGamma)" filter="url(#nodeGlow)" opacity="0.9"/>
+                <circle cx="300" cy="220" r="36" fill="none" stroke="#22C55E" stroke-width="1.5" opacity="0.4"/>
+                <text x="300" y="216" class="cn-rep-node-label" text-anchor="middle">NODE</text>
+                <text x="300" y="230" class="cn-rep-node-label" text-anchor="middle" fill="#4ADE80">GAMMA</text>
+
+                <!-- Edge labels -->
+                <text x="300" y="78" text-anchor="middle" fill="rgba(59,130,246,0.6)" font-size="9" font-family="JetBrains Mono, monospace">2.3 ms · 8.9 MB/s</text>
+                <text x="210" y="175" text-anchor="middle" fill="rgba(34,197,94,0.6)" font-size="9" font-family="JetBrains Mono, monospace" transform="rotate(-35,210,175)">24ms</text>
+                <text x="390" y="175" text-anchor="middle" fill="rgba(139,92,246,0.6)" font-size="9" font-family="JetBrains Mono, monospace" transform="rotate(35,390,175)">18ms</text>
+            </svg>
+        </div>
+
+        <!-- Replication Factor Rings -->
+        <div style="display:flex;flex-direction:column;gap:var(--space-4);">
+            <div class="cn-card cn-reveal">
+                <div class="cn-card-header">
+                    <div class="cn-card-title">
+                        <i data-lucide="circle" style="width:13px;height:13px;color:var(--blue-400);"></i>
+                        Replica Health
+                    </div>
+                </div>
+                <div class="cn-card-body" style="display:flex;flex-direction:column;gap:var(--space-4);">
+
+                    <div style="text-align:center;">
+                        <div class="cn-rep-ring-wrap">
+                            <svg viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+                                <circle cx="50" cy="50" r="40" fill="none" stroke="#22C55E" stroke-width="10"
+                                        stroke-dasharray="251" stroke-dashoffset="8" stroke-linecap="round"/>
+                            </svg>
+                            <div class="cn-rep-ring-label">
+                                <span style="font-size:var(--text-lg);font-weight:800;color:var(--text-primary);">99.7</span>
+                                <span style="font-size:10px;color:var(--text-muted);">%</span>
+                            </div>
+                        </div>
+                        <div style="font-size:var(--text-xs);font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-top:var(--space-2);">Replication Rate</div>
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;font-size:var(--text-xs);">
+                            <span style="color:var(--text-muted);">Alpha replicas</span>
+                            <span class="cn-badge online" style="font-size:10px;">3/3</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;font-size:var(--text-xs);">
+                            <span style="color:var(--text-muted);">Beta replicas</span>
+                            <span class="cn-badge online" style="font-size:10px;">3/3</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;font-size:var(--text-xs);">
+                            <span style="color:var(--text-muted);">Gamma replicas</span>
+                            <span class="cn-badge online" style="font-size:10px;">3/3</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Replication Queue -->
+    <div class="cn-card cn-reveal">
+        <div class="cn-card-header">
+            <div class="cn-card-title">
+                <i data-lucide="list" style="width:14px;height:14px;color:var(--blue-400);"></i>
+                Replication Queue
+            </div>
+            <span class="cn-badge online" style="font-size:10px;">Live</span>
+        </div>
+        <div style="overflow:hidden;">
+            <div class="cn-queue-row" style="font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-disabled);border-bottom:1px solid var(--border-subtle);">
+                <span>#</span>
+                <span>File</span>
+                <span>Source → Target</span>
+                <span>Size</span>
+                <span>Status</span>
+            </div>
+            <div id="repQueue">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+    </div>
+
+</div><!-- /.cn-workspace -->
+
+<script>
+// ── SVG Packet Animation ──────────────────────────────────────────────────
+(function animatePackets() {
+    if (typeof gsap === 'undefined') return;
+
+    // Alpha → Beta
+    function animAB() {
+        gsap.set('#pkt-ab-1', { x: 0, opacity: 0 });
+        gsap.to('#pkt-ab-1', { attr: { cx: 450 }, opacity: 1, duration: 2.2, ease: 'none', repeat: -1, yoyo: true, delay: 0.5 });
+    }
+    // Beta → Alpha
+    function animBA() {
+        gsap.set('#pkt-ab-2', { x: 0, opacity: 0 });
+        gsap.to('#pkt-ab-2', { attr: { cx: 150 }, opacity: 0.85, duration: 2.8, ease: 'none', repeat: -1, yoyo: true, delay: 1.2 });
+    }
+    // Alpha → Gamma
+    function animAG() {
+        gsap.set('#pkt-ag-1', { opacity: 0 });
+        gsap.to('#pkt-ag-1', {
+            motionPath: { path: 'M150,90 L300,220', autoRotate: false },
+            opacity: 0.9, duration: 3, ease: 'none', repeat: -1, delay: 0.2
+        });
+    }
+    // Beta → Gamma
+    function animBG() {
+        gsap.set('#pkt-bg-1', { opacity: 0 });
+        gsap.to('#pkt-bg-1', {
+            attr: { cx: 300, cy: 220 },
+            opacity: 0.8, duration: 3.5, ease: 'none', repeat: -1, delay: 1.8
+        });
+    }
+
+    animAB(); animBA(); animBG();
+
+    // Pulse node circles
+    gsap.to(['.cn-rep-node-label'], {
+        opacity: 0.6,
+        duration: 1.5,
+        yoyo: true,
+        repeat: -1,
+        ease: 'power1.inOut',
+        stagger: 0.5,
+    });
+})();
+
+// ── Sync counter simulation ────────────────────────────────────────────────
+let syncCount = 847;
+const syncEl = document.getElementById('syncCounter');
+if (syncEl) {
+    syncEl.textContent = syncCount;
+    setInterval(() => {
+        syncCount += Math.floor(Math.random() * 3);
+        syncEl.textContent = syncCount;
+    }, 2000);
+}
+
+// ── Replication queue ─────────────────────────────────────────────────────
+const FILES = ['report-q4.pdf', 'backup-db.sql', 'images.zip', 'schema.json', 'video.mp4', 'audit.log', 'config.yaml'];
+const ROUTES = ['Alpha→Beta', 'Alpha→Gamma', 'Beta→Gamma', 'Beta→Alpha', 'Gamma→Alpha'];
+const SIZES2 = ['1.2 MB', '4.7 MB', '820 KB', '2.4 MB', '340 KB', '8.1 MB'];
+let queueIdx = 1;
+
+function buildQueue() {
+    const q = document.getElementById('repQueue');
+    if (!q) return;
+    q.innerHTML = '';
+    for (let i = 0; i < 8; i++) {
+        const done = Math.random() > 0.3;
+        const row = document.createElement('div');
+        row.className = 'cn-queue-row';
+        row.innerHTML = `
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-disabled);">${queueIdx++}</span>
+            <span style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--text-secondary);">${FILES[Math.floor(Math.random()*FILES.length)]}</span>
+            <span style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);">${ROUTES[Math.floor(Math.random()*ROUTES.length)]}</span>
+            <span style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--text-muted);">${SIZES2[Math.floor(Math.random()*SIZES2.length)]}</span>
+            <span class="cn-badge ${done ? 'online' : 'warning'}" style="font-size:10px;">${done ? 'Synced' : 'Queued'}</span>
+        `;
+        q.appendChild(row);
+    }
+}
+buildQueue();
+setInterval(() => {
+    const q = document.getElementById('repQueue');
+    if (!q || !q.lastChild) return;
+    q.removeChild(q.lastChild);
+    const done = Math.random() > 0.3;
+    const row = document.createElement('div');
+    row.className = 'cn-queue-row';
+    row.style.animation = 'cn-slide-down 0.3s ease both';
+    row.innerHTML = `
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-disabled);">${queueIdx++}</span>
+        <span style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--text-secondary);">${FILES[Math.floor(Math.random()*FILES.length)]}</span>
+        <span style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);">${ROUTES[Math.floor(Math.random()*ROUTES.length)]}</span>
+        <span style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--text-muted);">${SIZES2[Math.floor(Math.random()*SIZES2.length)]}</span>
+        <span class="cn-badge ${done ? 'online' : 'warning'}" style="font-size:10px;">${done ? 'Synced' : 'Queued'}</span>
+    `;
+    q.insertBefore(row, q.firstChild);
+}, 1500);
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+});
+</script>
+
+<div th:replace="~{fragments/header :: appShellEnd}"></div>
+</body>
+</html>

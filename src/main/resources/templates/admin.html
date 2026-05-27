@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudNest — Administrator Console</title>
+</head>
+<body>
+
+<!-- Include Sidebar App Shell Start -->
+<th:block th:replace="~{fragments/header :: appShellStart}"></th:block>
+
+<!-- Set Dynamic Page Title -->
+<script>
+    document.getElementById('cnPageTitle').textContent = 'Infrastructure Console';
+    document.getElementById('nav-admin')?.classList.add('active');
+</script>
+
+<div class="cn-workspace cn-anim-fade-in" style="padding:var(--space-6) 0;">
+
+    <!-- Alert Messaging -->
+    <div th:if="${success}" class="cn-alert success" style="margin-bottom:var(--space-6);">
+        <i data-lucide="check-circle" class="cn-alert-icon" style="width:16px;height:16px;"></i>
+        <div class="cn-alert-content">
+            <div class="cn-alert-title">Success</div>
+            <div class="cn-alert-message" th:text="${success}">Action completed successfully.</div>
+        </div>
+    </div>
+    
+    <div th:if="${error}" class="cn-alert error" style="margin-bottom:var(--space-6);">
+        <i data-lucide="alert-circle" class="cn-alert-icon" style="width:16px;height:16px;"></i>
+        <div class="cn-alert-content">
+            <div class="cn-alert-title">Failure</div>
+            <div class="cn-alert-message" th:text="${error}">Action failed.</div>
+        </div>
+    </div>
+
+    <!-- Global Stats Overview Row -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:var(--space-5);margin-bottom:var(--space-6);">
+        
+        <!-- Total Users Metric -->
+        <div class="cn-glass-card" style="padding:var(--space-5);display:flex;align-items:center;gap:var(--space-4);position:relative;overflow:hidden;">
+            <div style="width:52px;height:52px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;color:var(--blue-400);">
+                <i data-lucide="users" style="width:24px;height:24px;"></i>
+            </div>
+            <div>
+                <div style="font-size:var(--text-xs);font-weight:var(--fw-semibold);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Global Users</div>
+                <div style="font-size:var(--text-3xl);font-weight:var(--fw-bold);color:var(--text-primary);margin-top:2px;" th:text="${totalUsers}">0</div>
+            </div>
+            <div style="position:absolute;right:-10px;bottom:-10px;font-size:5rem;font-weight:900;color:rgba(59,130,246,0.03);pointer-events:none;user-select:none;">USR</div>
+        </div>
+
+        <!-- Total Files Metric -->
+        <div class="cn-glass-card" style="padding:var(--space-5);display:flex;align-items:center;gap:var(--space-4);position:relative;overflow:hidden;">
+            <div style="width:52px;height:52px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;color:var(--purple-400);">
+                <i data-lucide="folder-open" style="width:24px;height:24px;"></i>
+            </div>
+            <div>
+                <div style="font-size:var(--text-xs);font-weight:var(--fw-semibold);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Global Files</div>
+                <div style="font-size:var(--text-3xl);font-weight:var(--fw-bold);color:var(--text-primary);margin-top:2px;" th:text="${totalFiles}">0</div>
+            </div>
+            <div style="position:absolute;right:-10px;bottom:-10px;font-size:5rem;font-weight:900;color:rgba(139,92,246,0.03);pointer-events:none;user-select:none;">FIL</div>
+        </div>
+
+        <!-- System Total Storage -->
+        <div class="cn-glass-card" style="padding:var(--space-5);display:flex;align-items:center;gap:var(--space-4);position:relative;overflow:hidden;">
+            <div style="width:52px;height:52px;background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;color:var(--cyan-400);">
+                <i data-lucide="hard-drive" style="width:24px;height:24px;"></i>
+            </div>
+            <div>
+                <div style="font-size:var(--text-xs);font-weight:var(--fw-semibold);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Global Storage Stored</div>
+                <div style="font-size:var(--text-3xl);font-weight:var(--fw-bold);color:var(--text-primary);margin-top:2px;" th:text="${totalStorage}">0 B</div>
+            </div>
+            <div style="position:absolute;right:-10px;bottom:-10px;font-size:5rem;font-weight:900;color:rgba(6,182,212,0.03);pointer-events:none;user-select:none;">STO</div>
+        </div>
+
+    </div>
+
+    <!-- Storage Nodes Distribution -->
+    <div class="cn-glass-card" style="padding:var(--space-5);margin-bottom:var(--space-6);">
+        <h3 style="font-size:var(--text-lg);font-weight:var(--fw-bold);color:var(--text-primary);margin-bottom:var(--space-4);display:flex;align-items:center;gap:8px;">
+            <i data-lucide="server" style="width:18px;height:18px;color:var(--blue-400);"></i>
+            Distributed Infrastructure Node Weights
+        </h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:var(--space-5);">
+            
+            <!-- Node 1 -->
+            <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:var(--space-4);">
+                <div style="display:flex;align-items:center;justify-content:between;margin-bottom:8px;">
+                    <span style="font-weight:var(--fw-semibold);font-size:var(--text-sm);">Storage Node alpha (node1)</span>
+                    <span class="cn-badge secondary" th:text="${node1Count} + ' files'">0 files</span>
+                </div>
+                <div class="cn-quota-track" style="height:6px;background:rgba(255,255,255,0.05);">
+                    <div class="cn-quota-fill" th:style="'width: ' + (${totalFiles > 0} ? (${node1Count} * 100.0 / ${totalFiles}) : 0) + '%; background:var(--gradient-primary);'"></div>
+                </div>
+            </div>
+
+            <!-- Node 2 -->
+            <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:var(--space-4);">
+                <div style="display:flex;align-items:center;justify-content:between;margin-bottom:8px;">
+                    <span style="font-weight:var(--fw-semibold);font-size:var(--text-sm);">Storage Node beta (node2)</span>
+                    <span class="cn-badge secondary" th:text="${node2Count} + ' files'">0 files</span>
+                </div>
+                <div class="cn-quota-track" style="height:6px;background:rgba(255,255,255,0.05);">
+                    <div class="cn-quota-fill" th:style="'width: ' + (${totalFiles > 0} ? (${node2Count} * 100.0 / ${totalFiles}) : 0) + '%; background:var(--gradient-primary);'"></div>
+                </div>
+            </div>
+
+            <!-- Node 3 -->
+            <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:var(--space-4);">
+                <div style="display:flex;align-items:center;justify-content:between;margin-bottom:8px;">
+                    <span style="font-weight:var(--fw-semibold);font-size:var(--text-sm);">Storage Node gamma (node3)</span>
+                    <span class="cn-badge secondary" th:text="${node3Count} + ' files'">0 files</span>
+                </div>
+                <div class="cn-quota-track" style="height:6px;background:rgba(255,255,255,0.05);">
+                    <div class="cn-quota-fill" th:style="'width: ' + (${totalFiles > 0} ? (${node3Count} * 100.0 / ${totalFiles}) : 0) + '%; background:var(--gradient-primary);'"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Interactive Tabs -->
+    <div class="cn-glass-card" style="padding:0;overflow:hidden;margin-bottom:var(--space-6);">
+        
+        <!-- Tab Headers -->
+        <div style="display:flex;border-bottom:1px solid var(--border-subtle);background:rgba(0,0,0,0.1);padding:0 var(--space-4);">
+            <button class="cn-tab-btn active" onclick="switchAdminTab('usersTab', this)" style="padding:var(--space-4) var(--space-5);background:none;border:none;border-bottom:2px solid var(--blue-500);color:var(--text-primary);font-weight:var(--fw-semibold);font-size:var(--text-sm);cursor:pointer;transition:all 0.15s;">
+                User Accounts Directory
+            </button>
+            <button class="cn-tab-btn" onclick="switchAdminTab('filesTab', this)" style="padding:var(--space-4) var(--space-5);background:none;border:none;border-bottom:2px solid transparent;color:var(--text-secondary);font-weight:var(--fw-semibold);font-size:var(--text-sm);cursor:pointer;transition:all 0.15s;">
+                Global File Registry
+            </button>
+        </div>
+
+        <!-- Tab 1: User Directory -->
+        <div class="cn-admin-tab-content" id="usersTab" style="padding:var(--space-4);display:block;">
+            <div class="cn-table-wrapper" style="overflow-x:auto;">
+                <table class="cn-table">
+                    <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email Address</th>
+                        <th>Joined Date</th>
+                        <th>System Role</th>
+                        <th style="text-align:right;">Access Controls</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="userItem : ${users}">
+                        <td style="font-weight:var(--fw-semibold);color:var(--text-primary);display:flex;align-items:center;gap:10px;">
+                            <div style="width:28px;height:28px;background:var(--gradient-primary);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:var(--text-xs);" th:text="${#strings.substring(userItem.username,0,1).toUpperCase()}">U</div>
+                            <span th:text="${userItem.username}">username</span>
+                        </td>
+                        <td th:text="${userItem.email}">email</td>
+                        <td th:text="${#temporals.format(userItem.createdAt, 'yyyy-MM-dd HH:mm')}">date</td>
+                        <td>
+                            <span th:if="${userItem.role == 'ROLE_ADMIN'}" class="cn-badge primary">Administrator</span>
+                            <span th:if="${userItem.role == 'ROLE_USER'}" class="cn-badge secondary">Standard User</span>
+                        </td>
+                        <td style="text-align:right;">
+                            <!-- Toggle Role Button -->
+                            <form th:action="@{/admin/users/toggle-role/{id}(id=${userItem.id})}" method="post" style="display:inline;">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <button type="submit" class="cn-btn cn-btn-secondary cn-btn-xs" style="padding:5px 10px;">
+                                    <i data-lucide="shield-alert" style="width:12px;height:12px;margin-right:4px;"></i>
+                                    Toggle Authorization
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 2: Global File Registry -->
+        <div class="cn-admin-tab-content" id="filesTab" style="padding:var(--space-4);display:none;">
+            
+            <div th:if="${#lists.isEmpty(files)}" style="padding:var(--space-8);text-align:center;color:var(--text-disabled);">
+                <i data-lucide="hard-drive-download" style="width:48px;height:48px;stroke-width:1.5;margin-bottom:var(--space-4);"></i>
+                <p>No files uploaded globally in the system yet.</p>
+            </div>
+
+            <div th:unless="${#lists.isEmpty(files)}" class="cn-table-wrapper" style="overflow-x:auto;">
+                <table class="cn-table">
+                    <thead>
+                    <tr>
+                        <th>Filename</th>
+                        <th>Mime Type</th>
+                        <th>Byte Size</th>
+                        <th>Node Address</th>
+                        <th>Owner Account</th>
+                        <th>Uploaded Time</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="fileItem : ${files}">
+                        <td style="font-weight:var(--fw-semibold);color:var(--text-primary);">
+                            <span style="display:flex;align-items:center;gap:8px;">
+                                <i data-lucide="file" style="width:16px;height:16px;color:var(--blue-400);flex-shrink:0;"></i>
+                                <span th:text="${fileItem.originalName}">filename.pdf</span>
+                            </span>
+                        </td>
+                        <td th:text="${fileItem.fileType}">type</td>
+                        <td th:text="${fileItem.fileSize} + ' bytes'">size</td>
+                        <td>
+                            <span class="cn-badge secondary" th:text="${fileItem.storageNode}">node1</span>
+                        </td>
+                        <td style="color:var(--blue-400);font-weight:var(--fw-medium);" th:text="${fileItem.user.username}">owner</td>
+                        <td th:text="${#temporals.format(fileItem.uploadedAt, 'yyyy-MM-dd HH:mm')}">time</td>
+                        <td style="text-align:right;">
+                            <!-- Administrative Delete -->
+                            <form th:action="@{/admin/files/delete/{id}(id=${fileItem.id})}" method="post" style="display:inline;" onsubmit="return confirm('WARNING: You are about to permanently delete this file globally across the storage cluster! Proceed?');">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <button type="submit" class="cn-btn danger cn-btn-xs" style="padding:5px 10px;">
+                                    <i data-lucide="trash-2" style="width:12px;height:12px;margin-right:4px;"></i>
+                                    Globally Purge
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Switch Tab Script -->
+<script>
+    function switchAdminTab(tabId, btn) {
+        // Hide all contents
+        const contents = document.querySelectorAll('.cn-admin-tab-content');
+        contents.forEach(c => c.style.display = 'none');
+
+        // Deactivate all tab headers
+        const tabs = document.querySelectorAll('.cn-tab-btn');
+        tabs.forEach(t => {
+            t.classList.remove('active');
+            t.style.color = 'var(--text-secondary)';
+            t.style.borderBottomColor = 'transparent';
+        });
+
+        // Activate selected tab
+        document.getElementById(tabId).style.display = 'block';
+        btn.classList.add('active');
+        btn.style.color = 'var(--text-primary)';
+        btn.style.borderBottomColor = 'var(--blue-500)';
+    }
+</script>
+
+<!-- Include Sidebar App Shell End -->
+<th:block th:replace="~{fragments/header :: appShellEnd}"></th:block>
+
+</body>
+</html>

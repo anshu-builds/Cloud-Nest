@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CloudNest — Sign in to your Distributed Infrastructure Platform">
+    <title>CloudNest — Sign In</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link th:href="@{/css/design-system.css}" rel="stylesheet">
+    <link th:href="@{/css/animations.css}" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@0.325.0/dist/umd/lucide.min.js"></script>
+    <!-- Three.js for hero background -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <!-- GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+    <style>
+        /* Auth page specific overrides */
+        body { overflow: hidden; }
+
+        @media (max-width: 768px) {
+            body { overflow: auto; }
+            .cn-auth-left { display: none !important; }
+            .cn-auth-right { width: 100% !important; border-left: none !important; }
+        }
+
+        /* Floating particles layer */
+        #heroCanvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Form floating label effect */
+        .cn-input-floating {
+            position: relative;
+        }
+
+        .cn-input-floating .cn-input {
+            padding-top: 20px;
+            padding-bottom: 8px;
+        }
+
+        .cn-input-floating label {
+            position: absolute;
+            left: 14px;
+            top: 14px;
+            font-size: var(--text-sm);
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+            pointer-events: none;
+        }
+
+        .cn-input-floating .cn-input:focus + label,
+        .cn-input-floating .cn-input:not(:placeholder-shown) + label {
+            top: 6px;
+            font-size: 10px;
+            font-weight: var(--fw-semibold);
+            color: var(--blue-400);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        /* Password toggle button */
+        .cn-input-wrapper {
+            position: relative;
+        }
+
+        .cn-input-wrapper .cn-input {
+            padding-right: 44px;
+        }
+
+        .cn-pw-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            transition: color 0.15s;
+        }
+
+        .cn-pw-toggle:hover {
+            color: var(--text-secondary);
+        }
+
+        /* Hero text gradient animation */
+        @keyframes cn-hero-glow {
+            0%, 100% { text-shadow: 0 0 40px rgba(59,130,246,0.3); }
+            50% { text-shadow: 0 0 80px rgba(139,92,246,0.4), 0 0 40px rgba(59,130,246,0.3); }
+        }
+
+        .cn-hero-headline {
+            animation: cn-hero-glow 4s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="cn-auth-body">
+
+<!-- ══════════════════════════════════════════════════════
+     LEFT PANEL — 3D Hero
+     ══════════════════════════════════════════════════════ -->
+<div class="cn-auth-left" style="min-height:100vh;flex:1.4;position:relative;">
+
+    <!-- Three.js Canvas -->
+    <canvas id="heroCanvas"></canvas>
+
+    <!-- Gradient overlay for readability -->
+    <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(8,14,28,0.3) 0%, rgba(8,14,28,0.1) 50%, rgba(8,14,28,0.4) 100%);z-index:1;pointer-events:none;"></div>
+
+    <!-- Logo top-left -->
+    <div class="cn-auth-logo-area cn-anim-fade-in">
+        <div class="cn-auth-logo-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5"/>
+                <path d="M2 12l10 5 10-5"/>
+            </svg>
+        </div>
+        <span class="cn-auth-logo-name">CloudNest</span>
+    </div>
+
+    <!-- Hero Content (bottom-left) -->
+    <div class="cn-auth-left-content" style="padding:3rem;position:absolute;bottom:0;left:0;right:0;z-index:2;
+         background:linear-gradient(to top, rgba(8,14,28,0.9) 0%, rgba(8,14,28,0.6) 60%, transparent 100%);
+         padding-bottom:3rem;">
+
+        <h1 class="cn-auth-hero-headline cn-hero-headline cn-anim-slide-up">
+            Distributed Storage<br>
+            <span>Built For Scale.</span>
+        </h1>
+
+        <p class="cn-auth-hero-sub cn-anim-slide-up cn-delay-200">
+            Manage replication, deduplication, and intelligent storage routing across distributed infrastructure nodes.
+        </p>
+
+        <!-- Feature chips -->
+        <div class="cn-auth-feature-chips cn-anim-slide-up cn-delay-400">
+            <div class="cn-feature-chip">
+                <span class="dot" style="background:var(--blue-400);"></span>
+                SHA-256 Dedup
+            </div>
+            <div class="cn-feature-chip">
+                <span class="dot" style="background:var(--purple-400);"></span>
+                Multi-Node
+            </div>
+            <div class="cn-feature-chip">
+                <span class="dot" style="background:var(--success);"></span>
+                99.7% Uptime
+            </div>
+            <div class="cn-feature-chip">
+                <span class="dot" style="background:var(--cyan-400);"></span>
+                Secure Links
+            </div>
+            <div class="cn-feature-chip">
+                <span class="dot" style="background:var(--warning);"></span>
+                ZIP Export
+            </div>
+        </div>
+
+        <!-- Node status strip -->
+        <div style="display:flex;gap:1.5rem;margin-top:1.5rem;" class="cn-anim-fade-in cn-delay-600">
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <div class="cn-live-dot">
+                    <div class="cn-live-dot-inner" style="width:6px;height:6px;"></div>
+                </div>
+                <span style="font-size:var(--text-xs);color:rgba(255,255,255,0.5);font-family:var(--font-mono);">NODE-ALPHA</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <div class="cn-live-dot">
+                    <div class="cn-live-dot-inner" style="width:6px;height:6px;"></div>
+                </div>
+                <span style="font-size:var(--text-xs);color:rgba(255,255,255,0.5);font-family:var(--font-mono);">NODE-BETA</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <div class="cn-live-dot">
+                    <div class="cn-live-dot-inner" style="width:6px;height:6px;"></div>
+                </div>
+                <span style="font-size:var(--text-xs);color:rgba(255,255,255,0.5);font-family:var(--font-mono);">NODE-GAMMA</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     RIGHT PANEL — Auth Form
+     ══════════════════════════════════════════════════════ -->
+<div class="cn-auth-right cn-anim-slide-left">
+
+    <div class="cn-auth-form-container">
+
+        <!-- Form header -->
+        <div class="cn-auth-form-header">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem;">
+                <div style="width:36px;height:36px;background:var(--gradient-primary);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-glow-blue);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <span style="font-size:var(--text-base);font-weight:var(--fw-bold);background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-0.02em;">CloudNest</span>
+            </div>
+            <h2 class="cn-auth-form-title">Welcome back</h2>
+            <p class="cn-auth-form-subtitle">Sign in to your infrastructure account</p>
+        </div>
+
+        <!-- Alert messages -->
+        <div th:if="${param.error}" class="cn-alert error" style="margin-bottom:var(--space-5);">
+            <i data-lucide="alert-circle" class="cn-alert-icon" style="width:16px;height:16px;"></i>
+            <div class="cn-alert-content">
+                <div class="cn-alert-title">Authentication Failed</div>
+                <div class="cn-alert-message">Invalid username or password. Please try again.</div>
+            </div>
+        </div>
+        <div th:if="${param.logout}" class="cn-alert success" style="margin-bottom:var(--space-5);">
+            <i data-lucide="check-circle" class="cn-alert-icon" style="width:16px;height:16px;"></i>
+            <div class="cn-alert-content">
+                <div class="cn-alert-message">Signed out successfully. See you next time.</div>
+            </div>
+        </div>
+        <div th:if="${success}" class="cn-alert success" style="margin-bottom:var(--space-5);">
+            <i data-lucide="check-circle" class="cn-alert-icon" style="width:16px;height:16px;"></i>
+            <div class="cn-alert-content">
+                <div class="cn-alert-message" th:text="${success}"></div>
+            </div>
+        </div>
+
+        <!-- Login Form -->
+        <form th:action="@{/login}" method="post" id="loginForm">
+
+            <!-- Username -->
+            <div class="cn-form-group">
+                <label for="username" class="cn-label">Username</label>
+                <div style="position:relative;">
+                    <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);display:flex;align-items:center;pointer-events:none;">
+                        <i data-lucide="user" style="width:15px;height:15px;"></i>
+                    </span>
+                    <input type="text" class="cn-input" id="username" name="username"
+                           placeholder="Enter your username"
+                           style="padding-left:40px;"
+                           required autofocus autocomplete="username">
+                </div>
+            </div>
+
+            <!-- Password -->
+            <div class="cn-form-group">
+                <label for="password" class="cn-label">Password</label>
+                <div class="cn-input-wrapper">
+                    <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);display:flex;align-items:center;pointer-events:none;z-index:1;">
+                        <i data-lucide="lock" style="width:15px;height:15px;"></i>
+                    </span>
+                    <input type="password" class="cn-input" id="password" name="password"
+                           placeholder="Enter your password"
+                           style="padding-left:40px;"
+                           required autocomplete="current-password">
+                    <button type="button" class="cn-pw-toggle" id="pwToggleBtn" onclick="togglePassword('password', this)" aria-label="Toggle password visibility">
+                        <i data-lucide="eye" style="width:15px;height:15px;" id="pwEyeIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="cn-btn cn-btn-primary cn-magnetic" id="loginBtn"
+                    style="width:100%;padding:12px;font-size:var(--text-base);margin-top:var(--space-2);">
+                <i data-lucide="log-in" style="width:16px;height:16px;"></i>
+                Sign In to Platform
+            </button>
+
+        </form>
+
+        <!-- Divider -->
+        <div style="display:flex;align-items:center;gap:var(--space-3);margin:var(--space-6) 0;">
+            <div style="flex:1;height:1px;background:var(--border-subtle);"></div>
+            <span style="font-size:var(--text-xs);color:var(--text-disabled);">or</span>
+            <div style="flex:1;height:1px;background:var(--border-subtle);"></div>
+        </div>
+
+        <!-- Register link -->
+        <div class="cn-auth-form-footer">
+            <p style="font-size:var(--text-sm);color:var(--text-muted);">
+                Don't have an account?
+                <a th:href="@{/register}" class="cn-auth-link">Create account</a>
+            </p>
+        </div>
+
+        <!-- Platform tags -->
+        <div style="display:flex;justify-content:center;gap:var(--space-4);margin-top:var(--space-8);">
+            <span style="font-size:10px;color:var(--text-disabled);font-family:var(--font-mono);">SHA-256</span>
+            <span style="font-size:10px;color:var(--text-disabled);font-family:var(--font-mono);">AES-256</span>
+            <span style="font-size:10px;color:var(--text-disabled);font-family:var(--font-mono);">DISTRIBUTED</span>
+            <span style="font-size:10px;color:var(--text-disabled);font-family:var(--font-mono);">REPLICATED</span>
+        </div>
+
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     THREE.JS HERO NETWORK
+     ══════════════════════════════════════════════════════ -->
+<script>
+(function initHeroScene() {
+    const canvas = document.getElementById('heroCanvas');
+    if (!canvas || typeof THREE === 'undefined') return;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x080E1C, 1);
+
+    // WebGL context loss recovery
+    canvas.addEventListener('webglcontextlost', (e) => {
+        e.preventDefault();
+        cancelAnimationFrame(animFrameId);
+    });
+    canvas.addEventListener('webglcontextrestored', () => {
+        animate();
+    });
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
+    camera.position.set(0, 2, 9);
+
+    // Resize handler
+    function resize() {
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0x3B82F6, 0.3));
+    const light1 = new THREE.PointLight(0x3B82F6, 2, 20);
+    light1.position.set(5, 5, 5);
+    scene.add(light1);
+    const light2 = new THREE.PointLight(0x8B5CF6, 1.5, 15);
+    light2.position.set(-5, -3, 3);
+    scene.add(light2);
+
+    // Create nodes
+    const nodes = [];
+    const nodeCount = 40;
+    const nodeGeo = new THREE.IcosahedronGeometry(0.10, 1);
+    const nodeMat = new THREE.MeshPhongMaterial({
+        color: 0x3B82F6,
+        emissive: 0x3B82F6,
+        emissiveIntensity: 0.5,
+        transparent: true,
+        opacity: 0.9
+    });
+
+    for (let i = 0; i < nodeCount; i++) {
+        const mesh = new THREE.Mesh(nodeGeo, nodeMat.clone());
+        const theta = Math.random() * Math.PI * 2;
+        const phi   = Math.acos(2 * Math.random() - 1);
+        const r     = 2.5 + Math.random() * 3;
+        mesh.position.set(
+            r * Math.sin(phi) * Math.cos(theta),
+            r * Math.sin(phi) * Math.sin(theta) * 0.6,
+            r * Math.cos(phi)
+        );
+        mesh.userData = {
+            pulseSpeed: 0.5 + Math.random() * 1.5,
+            pulseOffset: Math.random() * Math.PI * 2,
+            originalScale: 0.8 + Math.random() * 0.4
+        };
+        mesh.scale.setScalar(mesh.userData.originalScale);
+        scene.add(mesh);
+        nodes.push(mesh);
+    }
+
+    // Edges between nearby nodes
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x3B82F6, transparent: true, opacity: 0.12 });
+    for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+            const dist = nodes[i].position.distanceTo(nodes[j].position);
+            if (dist < 2.8 && Math.random() > 0.4) {
+                const geo = new THREE.BufferGeometry().setFromPoints([
+                    nodes[i].position, nodes[j].position
+                ]);
+                scene.add(new THREE.Line(geo, edgeMat.clone()));
+            }
+        }
+    }
+
+    // Particle field
+    const particleGeo = new THREE.BufferGeometry();
+    const particleCount = 1500;
+    const positions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount * 3; i++) {
+        positions[i] = (Math.random() - 0.5) * 16;
+    }
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const particleMat = new THREE.PointsMaterial({
+        color: 0x8B5CF6,
+        size: 0.018,
+        transparent: true,
+        opacity: 0.5
+    });
+    scene.add(new THREE.Points(particleGeo, particleMat));
+
+    // Mouse parallax
+    let mx = 0, my = 0;
+    document.addEventListener('mousemove', (e) => {
+        mx = (e.clientX / window.innerWidth  - 0.5) * 2;
+        my = (e.clientY / window.innerHeight - 0.5) * 2;
+    });
+
+    // Animation loop
+    const clock = new THREE.Clock();
+    let animFrameId;
+    function animate() {
+        animFrameId = requestAnimationFrame(animate);
+
+        // Skip rendering when tab is hidden
+        if (document.hidden) return;
+
+        const t = clock.getElapsedTime();
+
+        // Pulse nodes
+        nodes.forEach(node => {
+            const { pulseSpeed, pulseOffset, originalScale } = node.userData;
+            const scale = originalScale + Math.sin(t * pulseSpeed + pulseOffset) * 0.08;
+            node.scale.setScalar(scale);
+        });
+
+        // Slow scene rotation + mouse parallax
+        scene.rotation.y = t * 0.04 + mx * 0.08;
+        scene.rotation.x = my * 0.04;
+
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    // Pause/resume on tab visibility
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            cancelAnimationFrame(animFrameId);
+        } else {
+            animate();
+        }
+    });
+})();
+</script>
+
+<script>
+// Toggle password visibility
+function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById('pwEyeIcon');
+    if (!input) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (typeof lucide !== 'undefined') {
+            icon.setAttribute('data-lucide', 'eye-off');
+            lucide.createIcons();
+        }
+    } else {
+        input.type = 'password';
+        if (typeof lucide !== 'undefined') {
+            icon.setAttribute('data-lucide', 'eye');
+            lucide.createIcons();
+        }
+    }
+}
+
+// Init Lucide icons
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!--
+    CloudNest Enterprise — Footer Fragment
+    This footer is ONLY used on auth pages (login/register).
+    The app shell pages (dashboard, files, etc.) do NOT use a footer —
+    the sidebar footer zone handles user info and navigation.
+-->
+<body>
+
+<!-- Auth page footer -->
+<footer th:fragment="footer"
+        style="
+            text-align: center;
+            padding: 1.5rem 1rem;
+            font-size: 0.75rem;
+            color: var(--text-disabled);
+            font-family: var(--font-sans);
+            border-top: 1px solid var(--border-subtle);
+            margin-top: auto;
+        ">
+    <span>CloudNest &copy; 2026</span>
+    <span style="margin: 0 0.5rem; opacity:0.4;">·</span>
+    <span>Distributed Infrastructure Platform</span>
+    <span style="margin: 0 0.5rem; opacity:0.4;">·</span>
+    <span>SHA-256 · Multi-Node · Replicated</span>
+</footer>
+
+</body>
+</html>

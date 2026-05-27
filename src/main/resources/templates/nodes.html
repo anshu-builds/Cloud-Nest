@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CloudNest Storage Nodes — Interactive distributed topology visualization">
+    <title>CloudNest — Storage Nodes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link th:href="@{/css/design-system.css}" rel="stylesheet">
+    <link th:href="@{/css/animations.css}" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@0.325.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <style>
+        .cn-topology-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: var(--space-5);
+            align-items: start;
+        }
+        .cn-topology-canvas-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            position: relative;
+            height: 520px;
+        }
+        #topologyCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: grab;
+        }
+        #topologyCanvas:active { cursor: grabbing; }
+
+        /* Canvas overlay labels */
+        .cn-canvas-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+        .cn-canvas-label {
+            position: absolute;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: rgba(255,255,255,0.7);
+            background: rgba(11,17,32,0.8);
+            border: 1px solid var(--border-default);
+            border-radius: 4px;
+            padding: 2px 7px;
+            pointer-events: none;
+            transform: translate(-50%, -140%);
+            white-space: nowrap;
+        }
+        .cn-canvas-hint {
+            position: absolute;
+            bottom: var(--space-3);
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: var(--text-xs);
+            color: var(--text-disabled);
+            background: rgba(11,17,32,0.7);
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-subtle);
+            backdrop-filter: blur(8px);
+        }
+        /* Node detail panel */
+        .cn-node-detail {
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+        }
+        .cn-node-detail-header {
+            padding: var(--space-5);
+            border-bottom: 1px solid var(--border-subtle);
+            background: var(--gradient-blue-glow);
+        }
+        .cn-node-detail-body { padding: var(--space-5); }
+        .cn-node-detail-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-3) 0;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: var(--text-sm);
+        }
+        .cn-node-detail-stat:last-child { border-bottom: none; }
+        .cn-node-detail-stat-label { color: var(--text-muted); font-size: var(--text-xs); }
+        .cn-node-detail-stat-value { color: var(--text-primary); font-family: var(--font-mono); font-weight: 600; font-size: var(--text-xs); }
+
+        /* Animated packet indicator */
+        .cn-packet-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) 0;
+            font-size: var(--text-xs);
+            color: var(--text-muted);
+        }
+        .cn-packet-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--blue-400);
+            animation: cn-pulse-dot 1.5s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 1024px) {
+            .cn-topology-layout { grid-template-columns: 1fr; }
+            .cn-topology-canvas-wrap { height: 380px; }
+        }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: appShellStart}"></div>
+
+<div class="cn-workspace">
+
+    <!-- Page Header -->
+    <div class="cn-flex cn-justify-between cn-items-center cn-mb-6 cn-reveal">
+        <div>
+            <h1 style="font-size:var(--text-2xl);font-weight:var(--fw-bold);letter-spacing:-0.03em;color:var(--text-primary);margin-bottom:4px;">
+                Storage Nodes
+            </h1>
+            <p style="font-size:var(--text-sm);color:var(--text-muted);">
+                Interactive distributed topology — 3 active nodes · 99.7% replication health
+            </p>
+        </div>
+        <div class="cn-flex cn-gap-3">
+            <span class="cn-badge online" style="padding:6px 14px;">
+                <span class="cn-status-dot"></span>
+                Infrastructure Healthy
+            </span>
+        </div>
+    </div>
+
+    <!-- Metric Strip -->
+    <div class="cn-metrics-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:var(--space-5);">
+        <div class="cn-metric-card cn-reveal">
+            <div class="cn-metric-icon green"><i data-lucide="server" style="width:17px;height:17px;"></i></div>
+            <div class="cn-metric-value">3</div>
+            <div class="cn-metric-label">Active Nodes</div>
+            <div class="cn-metric-trend up"><i data-lucide="check-circle" style="width:12px;height:12px;"></i> All healthy</div>
+        </div>
+        <div class="cn-metric-card cn-reveal cn-delay-100">
+            <div class="cn-metric-icon blue"><i data-lucide="database" style="width:17px;height:17px;"></i></div>
+            <div class="cn-metric-value">600<span style="font-size:var(--text-base);color:var(--text-muted);font-weight:500;"> GB</span></div>
+            <div class="cn-metric-label">Total Capacity</div>
+            <div class="cn-metric-trend neutral"><i data-lucide="hard-drive" style="width:12px;height:12px;"></i> 200 GB per node</div>
+        </div>
+        <div class="cn-metric-card cn-reveal cn-delay-200">
+            <div class="cn-metric-icon cyan"><i data-lucide="activity" style="width:17px;height:17px;"></i></div>
+            <div class="cn-metric-value">12<span style="font-size:var(--text-base);color:var(--text-muted);font-weight:500;"> ms</span></div>
+            <div class="cn-metric-label">Avg. Latency</div>
+            <div class="cn-metric-trend up"><i data-lucide="zap" style="width:12px;height:12px;"></i> Low latency</div>
+        </div>
+        <div class="cn-metric-card cn-reveal cn-delay-300">
+            <div class="cn-metric-icon yellow"><i data-lucide="git-branch" style="width:17px;height:17px;"></i></div>
+            <div class="cn-metric-value">6</div>
+            <div class="cn-metric-label">Active Links</div>
+            <div class="cn-metric-trend up"><i data-lucide="link" style="width:12px;height:12px;"></i> Fully meshed</div>
+        </div>
+    </div>
+
+    <!-- Topology + Detail Panel -->
+    <div class="cn-topology-layout cn-reveal">
+
+        <!-- Three.js Canvas -->
+        <div class="cn-topology-canvas-wrap">
+            <canvas id="topologyCanvas"></canvas>
+            <div class="cn-canvas-overlay">
+                <!-- Labels injected by JS -->
+                <div id="labelAlpha" class="cn-canvas-label" style="display:none;">NODE-ALPHA</div>
+                <div id="labelBeta"  class="cn-canvas-label" style="display:none;">NODE-BETA</div>
+                <div id="labelGamma" class="cn-canvas-label" style="display:none;">NODE-GAMMA</div>
+            </div>
+            <div class="cn-canvas-hint">
+                <i data-lucide="mouse-pointer" style="width:11px;height:11px;display:inline;"></i>
+                Click a node to inspect · Drag to orbit
+            </div>
+        </div>
+
+        <!-- Node Detail Panel -->
+        <div>
+            <div class="cn-node-detail">
+                <div class="cn-node-detail-header">
+                    <div class="cn-flex cn-justify-between cn-items-center">
+                        <div>
+                            <div id="detailNodeName" style="font-size:var(--text-lg);font-weight:var(--fw-bold);color:var(--text-primary);letter-spacing:-0.02em;">Node Alpha</div>
+                            <div id="detailNodeId" style="font-size:var(--text-xs);color:var(--text-muted);font-family:var(--font-mono);margin-top:2px;">NODE-ALPHA · US-EAST-1</div>
+                        </div>
+                        <span class="cn-badge online" id="detailNodeStatus">
+                            <span class="cn-status-dot"></span>Online
+                        </span>
+                    </div>
+                </div>
+                <div class="cn-node-detail-body">
+
+                    <!-- Storage Progress -->
+                    <div style="margin-bottom:var(--space-4);">
+                        <div class="cn-flex cn-justify-between" style="margin-bottom:var(--space-2);">
+                            <span style="font-size:var(--text-xs);color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Storage</span>
+                            <span id="detailStorage" style="font-size:var(--text-xs);font-family:var(--font-mono);color:var(--text-secondary);">45.2 / 200 GB</span>
+                        </div>
+                        <div class="cn-progress" style="height:8px;">
+                            <div class="cn-progress-bar" id="detailStorageBar" style="width:22%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="cn-node-detail-stat">
+                        <span class="cn-node-detail-stat-label">Latency</span>
+                        <span class="cn-node-detail-stat-value" id="detailLatency">12 ms</span>
+                    </div>
+                    <div class="cn-node-detail-stat">
+                        <span class="cn-node-detail-stat-label">Files Stored</span>
+                        <span class="cn-node-detail-stat-value" id="detailFiles">—</span>
+                    </div>
+                    <div class="cn-node-detail-stat">
+                        <span class="cn-node-detail-stat-label">Uptime</span>
+                        <span class="cn-node-detail-stat-value" id="detailUptime">99.97%</span>
+                    </div>
+                    <div class="cn-node-detail-stat">
+                        <span class="cn-node-detail-stat-label">Replication</span>
+                        <span class="cn-node-detail-stat-value" id="detailReplication">Active</span>
+                    </div>
+                    <div class="cn-node-detail-stat">
+                        <span class="cn-node-detail-stat-label">Connected To</span>
+                        <div class="cn-flex cn-gap-2" id="detailConnections">
+                            <span class="cn-badge node">Beta</span>
+                            <span class="cn-badge node">Gamma</span>
+                        </div>
+                    </div>
+
+                    <!-- Live Packet Activity -->
+                    <div style="margin-top:var(--space-4);padding-top:var(--space-4);border-top:1px solid var(--border-subtle);">
+                        <div style="font-size:var(--text-xs);font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:var(--space-2);">Live Activity</div>
+                        <div id="packetLog">
+                            <div class="cn-packet-row"><span class="cn-packet-dot"></span>Sync → Beta (2.3 KB)</div>
+                            <div class="cn-packet-row"><span class="cn-packet-dot" style="background:var(--purple-400);"></span>Sync → Gamma (1.1 KB)</div>
+                            <div class="cn-packet-row"><span class="cn-packet-dot" style="background:var(--success);"></span>Write confirmed</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Node selector quick tabs -->
+            <div style="display:flex;gap:var(--space-2);margin-top:var(--space-4);">
+                <button class="cn-btn cn-btn-secondary cn-btn-sm" style="flex:1;justify-content:center;" onclick="selectNode(0)" id="btn-node-0">Alpha</button>
+                <button class="cn-btn cn-btn-secondary cn-btn-sm" style="flex:1;justify-content:center;" onclick="selectNode(1)" id="btn-node-1">Beta</button>
+                <button class="cn-btn cn-btn-secondary cn-btn-sm" style="flex:1;justify-content:center;" onclick="selectNode(2)" id="btn-node-2">Gamma</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Node Cards Row -->
+    <div class="cn-section-label" style="margin-top:var(--space-6);">
+        <i data-lucide="server" style="width:12px;height:12px;display:inline;"></i>
+        Node Overview
+    </div>
+    <div class="cn-node-grid cn-stagger">
+
+        <!-- Alpha -->
+        <div class="cn-node-card online cn-reveal">
+            <div class="cn-node-header">
+                <div>
+                    <div class="cn-node-name">Node Alpha</div>
+                    <div class="cn-node-region">US-EAST-1 · Primary</div>
+                </div>
+                <span class="cn-badge online"><span class="cn-status-dot"></span>Online</span>
+            </div>
+            <div class="cn-node-stats">
+                <div class="cn-node-stat-item">
+                    <div class="cn-node-stat-value" th:text="${node1Used}">45.2 GB</div>
+                    <div class="cn-node-stat-label">Used</div>
+                </div>
+                <div class="cn-node-stat-item">
+                    <div class="cn-node-stat-value">12 ms</div>
+                    <div class="cn-node-stat-label">Latency</div>
+                </div>
+                <div class="cn-node-stat-item">
+                    <div class="cn-node-stat-value">99.97%</div>
+                    <div class="cn-node-stat-label">Uptime</div>
+                </div>
+                <div class="cn-node-stat-item">
+                    <div class="cn-node-stat-value" th:text="${node1Pct}">22%</div>
+                    <div class="cn-node-stat-label">Capacity</div>
+                </div>
+            </div>
+            <div class="cn-progress" style="height:6px;margin-bottom:var(--space-3);">
+                <div class="cn-progress-bar" th:style="'width:' + ${node1Pct}"></div>
+            </div>
+            <div class="cn-flex cn-justify-between cn-items-center">
+                <span style="font-size:var(--text-xs);color:var(--text-muted);" th:text="${node1StorageFormatted}">45.2 / 200 GB</span>
+                <div class="cn-wave-bars">
+                    <div class="cn-wave-bar"></div><div class="cn-wave-bar"></div>
+                    <div class="cn-wave-bar"></div><div class="cn-wave-bar"></div>
+                    <div class="cn-wave-bar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Beta -->
+        <div class="cn-node-card online cn-reveal cn-delay-100">
+            <div class="cn-node-header">
+                <div>
+                    <div class="cn-node-name">Node Beta</div>
+                    <div class="cn-node-region">EU-WEST-1 · Secondary</div>
+                </div>
+                <span class="cn-badge online"><span class="cn-status-dot"></span>Online</span>
+            </div>
+            <div class="cn-node-stats">
+                <div class="cn-node-stat-item">
+                    <div class="cn-node-stat-value" th:text="${node2Used}">89.7 GB</div>
+                    <div class="cn-node-stat-label">Used</div>
+                </div>
+                <div class="cn-node-stat-item">
+                    <div class="cn-node-stat-value">18 ms</div>
+                    <div class="cn-node-stat-label">Latency</div>
+                </div>
+                <div class="cn-node-stat-item">
+                    <div class="cn-node-stat-value">99.95%</div>
+                    <div class="cn-node-stat-label">Uptime</div>
+                </div>
+                <div class="cn-node-stat-item">
+                    <div class="cn-node-stat-value" th:text="${node2Pct}">45%</div>
+                    <div class="cn-node-stat-label">Capacity</div>
+                </div>
+            </div>
+            <div class="cn-progress" style="height:6px;margin-bottom:var(--space-3);">
+                <div class="cn-progress-bar" th:style="'width:' + ${node2Pct}"></div>
+            </div>
+            <div class="cn-flex cn-justify-between cn-items-center">
+                <span style="font-size:var(--text-xs);color:var(--text-muted);" th:text="${node2StorageFormatted}">89.7 / 200 GB</span>
+                <div class="cn-wave-bars">
+                    <div class="cn-wave-bar" style="background:var(--purple-400);animation-delay:0.2s;"></div>
+                    <div class="cn-wave-bar" style="background:var(--purple-400);animation-delay:0.3s;"></div>
+                    <div class="cn-wave-bar" style="background:var(--purple-400);animation-delay:0.1s;"></div>
+                    <div class="cn-wave-bar" style="background:var(--purple-400);animation-delay:0.4s;"></div>
+                    <div class="cn-wave-bar" style="background:var(--purple-400);animation-delay:0.0s;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gamma -->
+        <div class="cn-node-card online cn-reveal cn-delay-200">
+            <div class="cn-node-header">
+                <div>
+                    <div class="cn-node-name">Node Gamma</div>
+                    <div class="cn-node-region">APAC-SE-1 · Tertiary</div>
+                </div>
+                <span class="cn-badge online"><span class="cn-status-dot"></span>Online</span>
+            </div>
+            <div class="cn-node-stats">
+                <div class="cn-node-stat-item">
+                    <div class="cn-node-stat-value" th:text="${node3Used}">31.4 GB</div>
+                    <div class="cn-node-stat-label">Used</div>
+                </div>
+                <div class="cn-node-stat-item">
+                    <div class="cn-node-stat-value">24 ms</div>
+                    <div class="cn-node-stat-label">Latency</div>
+                </div>
+                <div class="cn-node-stat-item">
+                    <div class="cn-node-stat-value">99.89%</div>
+                    <div class="cn-node-stat-label">Uptime</div>
+                </div>
+                <div class="cn-node-stat-item">
+                    <div class="cn-node-stat-value" th:text="${node3Pct}">16%</div>
+                    <div class="cn-node-stat-label">Capacity</div>
+                </div>
+            </div>
+            <div class="cn-progress" style="height:6px;margin-bottom:var(--space-3);">
+                <div class="cn-progress-bar" th:style="'width:' + ${node3Pct} + ';background:var(--gradient-success);'"></div>
+            </div>
+            <div class="cn-flex cn-justify-between cn-items-center">
+                <span style="font-size:var(--text-xs);color:var(--text-muted);" th:text="${node3StorageFormatted}">31.4 / 200 GB</span>
+                <div class="cn-wave-bars">
+                    <div class="cn-wave-bar" style="background:var(--cyan-400);animation-delay:0.5s;"></div>
+                    <div class="cn-wave-bar" style="background:var(--cyan-400);animation-delay:0.1s;"></div>
+                    <div class="cn-wave-bar" style="background:var(--cyan-400);animation-delay:0.3s;"></div>
+                    <div class="cn-wave-bar" style="background:var(--cyan-400);animation-delay:0.2s;"></div>
+                    <div class="cn-wave-bar" style="background:var(--cyan-400);animation-delay:0.4s;"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div><!-- /.cn-workspace -->
+
+<!-- ═══════════════ THREE.JS TOPOLOGY SCENE ═══════════════ -->
+<script th:inline="javascript">
+(function initTopology() {
+    const canvas = document.getElementById('topologyCanvas');
+    if (!canvas || typeof THREE === 'undefined') return;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x0B1120, 1);
+
+    // WebGL context loss recovery
+    canvas.addEventListener('webglcontextlost', (e) => {
+        e.preventDefault();
+        cancelAnimationFrame(animFrameId);
+    });
+    canvas.addEventListener('webglcontextrestored', () => {
+        animate();
+    });
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+    camera.position.set(0, 1.5, 7);
+
+    function resize() {
+        const w = canvas.clientWidth, h = canvas.clientHeight;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+    }
+    resize();
+    new ResizeObserver(resize).observe(canvas);
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0x3B82F6, 0.4));
+    const pLight = new THREE.PointLight(0x3B82F6, 3, 20);
+    pLight.position.set(0, 4, 4);
+    scene.add(pLight);
+    const pLight2 = new THREE.PointLight(0x8B5CF6, 2, 15);
+    pLight2.position.set(-4, -2, 2);
+    scene.add(pLight2);
+
+    // Node definitions
+    const nodeData = [
+        { name: 'Alpha', pos: [-2.5, 1, 0],   color: 0x3B82F6, glow: 0x3B82F6 },
+        { name: 'Beta',  pos: [ 2.5, 1, 0],   color: 0x8B5CF6, glow: 0x8B5CF6 },
+        { name: 'Gamma', pos: [ 0,  -2, 0.5], color: 0x22C55E, glow: 0x22C55E },
+    ];
+
+    const nodeGeometry = new THREE.IcosahedronGeometry(0.45, 2);
+    const nodeMeshes   = [];
+    const nodeLabels   = [
+        document.getElementById('labelAlpha'),
+        document.getElementById('labelBeta'),
+        document.getElementById('labelGamma'),
+    ];
+
+    nodeData.forEach((nd, i) => {
+        const mat = new THREE.MeshPhongMaterial({
+            color: nd.color,
+            emissive: nd.glow,
+            emissiveIntensity: 0.6,
+            shininess: 80,
+            transparent: true,
+            opacity: 0.95,
+        });
+        const mesh = new THREE.Mesh(nodeGeometry, mat);
+        mesh.position.set(...nd.pos);
+        mesh.userData = { index: i, name: nd.name, baseScale: 1 };
+        scene.add(mesh);
+        nodeMeshes.push(mesh);
+
+        // Glow ring around each node
+        const ringGeo = new THREE.RingGeometry(0.55, 0.62, 32);
+        const ringMat = new THREE.MeshBasicMaterial({ color: nd.color, transparent: true, opacity: 0.25, side: THREE.DoubleSide });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.set(...nd.pos);
+        scene.add(ring);
+
+        if (nodeLabels[i]) nodeLabels[i].style.display = 'block';
+    });
+
+    // Edges between nodes
+    const edgePairs = [[0,1],[1,2],[0,2]];
+    const edges = [];
+    edgePairs.forEach(([a, b]) => {
+        const points = [
+            new THREE.Vector3(...nodeData[a].pos),
+            new THREE.Vector3(...nodeData[b].pos),
+        ];
+        const geo = new THREE.BufferGeometry().setFromPoints(points);
+        const mat = new THREE.LineBasicMaterial({ color: 0x3B82F6, transparent: true, opacity: 0.2 });
+        const line = new THREE.Line(geo, mat);
+        scene.add(line);
+        edges.push({ line, a, b, mat });
+    });
+
+    // Ambient background particles
+    const pGeo = new THREE.BufferGeometry();
+    const pPos = new Float32Array(600 * 3);
+    for (let i = 0; i < pPos.length; i++) pPos[i] = (Math.random() - 0.5) * 14;
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+    scene.add(new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0x3B82F6, size: 0.022, transparent: true, opacity: 0.3 })));
+
+    // Data packets — small spheres traveling along edges
+    const packetGeo = new THREE.SphereGeometry(0.07, 8, 8);
+    const packets = [];
+    edgePairs.forEach(([a, b]) => {
+        const packetMat = new THREE.MeshBasicMaterial({ color: 0x60A5FA, transparent: true, opacity: 0.9 });
+        const packet = new THREE.Mesh(packetGeo, packetMat);
+        packet.userData = { a, b, t: Math.random(), speed: 0.004 + Math.random() * 0.004, dir: 1 };
+        scene.add(packet);
+        packets.push(packet);
+    });
+
+    // Mouse orbit
+    let isDragging = false, lastMouse = { x: 0, y: 0 };
+    let orbitX = 0, orbitY = 0, targetX = 0, targetY = 0;
+
+    canvas.addEventListener('mousedown', e => { isDragging = true; lastMouse = { x: e.clientX, y: e.clientY }; });
+    window.addEventListener('mouseup', () => isDragging = false);
+    window.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        const dx = e.clientX - lastMouse.x;
+        const dy = e.clientY - lastMouse.y;
+        targetX += dy * 0.005;
+        targetY += dx * 0.005;
+        lastMouse = { x: e.clientX, y: e.clientY };
+    });
+
+    // Raycaster for node click
+    const raycaster = new THREE.Raycaster();
+    const mouse2d  = new THREE.Vector2();
+    canvas.addEventListener('click', e => {
+        const rect = canvas.getBoundingClientRect();
+        mouse2d.x = ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+        mouse2d.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse2d, camera);
+        const hits = raycaster.intersectObjects(nodeMeshes);
+        if (hits.length) {
+            selectNode(hits[0].object.userData.index);
+        }
+    });
+
+    // Selected node index
+    window._selectedNode = 0;
+
+    // Update label positions
+    function updateLabels() {
+        nodeMeshes.forEach((mesh, i) => {
+            if (!nodeLabels[i]) return;
+            const pos = mesh.position.clone().project(camera);
+            const x = (pos.x + 1) / 2 * canvas.clientWidth;
+            const y = (1 - pos.y) / 2 * canvas.clientHeight;
+            nodeLabels[i].style.left = x + 'px';
+            nodeLabels[i].style.top  = y + 'px';
+        });
+    }
+
+    const clock = new THREE.Clock();
+
+    // Pre-allocate reusable vectors (avoid GC pressure in animation loop)
+    const _vecA = new THREE.Vector3();
+    const _vecB = new THREE.Vector3();
+
+    let animFrameId;
+    function animate() {
+        animFrameId = requestAnimationFrame(animate);
+
+        // Skip rendering when tab is hidden
+        if (document.hidden) return;
+
+        const t = clock.getElapsedTime();
+
+        // Smooth orbit
+        orbitX += (targetX - orbitX) * 0.08;
+        orbitY += (targetY - orbitY) * 0.08;
+        // Slow auto-rotate when not dragging
+        if (!isDragging) targetY += 0.003;
+
+        scene.rotation.y = orbitY;
+        scene.rotation.x = orbitX;
+
+        // Pulse nodes
+        nodeMeshes.forEach((mesh, i) => {
+            const pulse = 1 + Math.sin(t * 1.5 + i * 1.2) * 0.06;
+            mesh.scale.setScalar(i === window._selectedNode ? pulse * 1.25 : pulse);
+            // Brighten selected
+            mesh.material.emissiveIntensity = i === window._selectedNode
+                ? 1.0 + Math.sin(t * 3) * 0.3
+                : 0.5 + Math.sin(t * 1.5 + i) * 0.15;
+        });
+
+        // Animate edge opacity
+        edges.forEach(({ mat }, i) => {
+            mat.opacity = 0.15 + Math.sin(t * 0.8 + i) * 0.1;
+        });
+
+        // Move data packets along edges
+        packets.forEach(pkt => {
+            pkt.userData.t += pkt.userData.speed * pkt.userData.dir;
+            if (pkt.userData.t >= 1) { pkt.userData.t = 1; pkt.userData.dir = -1; }
+            if (pkt.userData.t <= 0) { pkt.userData.t = 0; pkt.userData.dir =  1; }
+            const { a, b, t: pt } = pkt.userData;
+            _vecA.set(...nodeData[a].pos);
+            _vecB.set(...nodeData[b].pos);
+            pkt.position.lerpVectors(_vecA, _vecB, pt);
+            pkt.material.opacity = 0.5 + Math.sin(t * 4 + pt * 10) * 0.4;
+        });
+
+        updateLabels();
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    // Pause/resume on tab visibility
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            cancelAnimationFrame(animFrameId);
+        } else {
+            animate();
+        }
+    });
+
+    // Expose selectNode globally
+    window.selectNodeMesh = (i) => {
+        nodeMeshes.forEach((m, j) => { m.scale.setScalar(j === i ? 1.25 : 1); });
+    };
+})();
+
+// Node data for the detail panel
+const NODE_INFO = [
+    { name: 'Node Alpha', id: 'NODE-ALPHA · US-EAST-1', storage: /*[[${node1StorageFormatted}]]*/ '45.2 / 200 GB', bar: /*[[${node1Pct}]]*/ '22%', latency: '12 ms', files: /*[[${node1Count}]]*/ '—', uptime: '99.97%', replication: 'Active', connections: ['Beta', 'Gamma'] },
+    { name: 'Node Beta',  id: 'NODE-BETA · EU-WEST-1',  storage: /*[[${node2StorageFormatted}]]*/ '89.7 / 200 GB', bar: /*[[${node2Pct}]]*/ '45%', latency: '18 ms', files: /*[[${node2Count}]]*/ '—', uptime: '99.95%', replication: 'Active', connections: ['Alpha', 'Gamma'] },
+    { name: 'Node Gamma', id: 'NODE-GAMMA · APAC-SE-1', storage: /*[[${node3StorageFormatted}]]*/ '31.4 / 200 GB', bar: /*[[${node3Pct}]]*/ '16%', latency: '24 ms', files: /*[[${node3Count}]]*/ '—', uptime: '99.89%', replication: 'Active', connections: ['Alpha', 'Beta'] },
+];
+
+function selectNode(i) {
+    window._selectedNode = i;
+    const n = NODE_INFO[i];
+    document.getElementById('detailNodeName').textContent  = n.name;
+    document.getElementById('detailNodeId').textContent    = n.id;
+    document.getElementById('detailStorage').textContent   = n.storage;
+    document.getElementById('detailStorageBar').style.width = n.bar;
+    document.getElementById('detailLatency').textContent   = n.latency;
+    document.getElementById('detailFiles').textContent     = n.files;
+    document.getElementById('detailUptime').textContent    = n.uptime;
+    document.getElementById('detailReplication').textContent = n.replication;
+    const connEl = document.getElementById('detailConnections');
+    connEl.innerHTML = n.connections.map(c => `<span class="cn-badge node">${c}</span>`).join('');
+    // Update tab buttons
+    [0,1,2].forEach(j => {
+        const btn = document.getElementById(`btn-node-${j}`);
+        if (btn) {
+            btn.className = `cn-btn cn-btn-sm ${j === i ? 'cn-btn-primary' : 'cn-btn-secondary'}`;
+            btn.style.flex = '1';
+            btn.style.justifyContent = 'center';
+        }
+    });
+    if (window.selectNodeMesh) window.selectNodeMesh(i);
+}
+
+// Live packet log rotation
+const ACTIVITY_POOL = [
+    ['Sync → Beta (2.3 KB)', 'var(--blue-400)'],
+    ['Sync → Gamma (1.1 KB)', 'var(--purple-400)'],
+    ['Write confirmed', 'var(--success)'],
+    ['Read request (847 B)', 'var(--cyan-400)'],
+    ['Dedup hit — skipped', 'var(--warning)'],
+    ['Replication OK', 'var(--success)'],
+];
+let actIdx = 0;
+setInterval(() => {
+    const log = document.getElementById('packetLog');
+    if (!log) return;
+    const [msg, color] = ACTIVITY_POOL[actIdx % ACTIVITY_POOL.length];
+    actIdx++;
+    const row = document.createElement('div');
+    row.className = 'cn-packet-row';
+    row.style.animation = 'cn-slide-down 0.3s ease both';
+    row.innerHTML = `<span class="cn-packet-dot" style="background:${color};"></span>${msg}`;
+    log.insertBefore(row, log.firstChild);
+    if (log.children.length > 4) log.removeChild(log.lastChild);
+}, 1800);
+
+document.addEventListener('DOMContentLoaded', () => {
+    selectNode(0);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+});
+</script>
+
+<div th:replace="~{fragments/header :: appShellEnd}"></div>
+</body>
+</html>

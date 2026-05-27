@@ -1,0 +1,465 @@
+/* ============================================================================
+   CLOUDNEST — Animation Library
+   All @keyframes and animation utility classes
+   ============================================================================ */
+
+/* ============================================================================
+   KEYFRAMES
+   ============================================================================ */
+
+/* Fade */
+@keyframes cn-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes cn-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* Slide */
+@keyframes cn-slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cn-slide-down {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cn-slide-left {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes cn-slide-right {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Scale */
+@keyframes cn-scale-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes cn-scale-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.92); }
+}
+
+/* Bounce in */
+@keyframes cn-bounce-in {
+  0%   { opacity: 0; transform: scale(0.7); }
+  60%  { opacity: 1; transform: scale(1.04); }
+  80%  { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}
+
+/* Float (for decorative elements) */
+@keyframes cn-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33%       { transform: translateY(-12px) rotate(1deg); }
+  66%       { transform: translateY(-6px) rotate(-1deg); }
+}
+
+/* Float subtle */
+@keyframes cn-float-subtle {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+/* Pulsing dot */
+@keyframes cn-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* Glow pulse */
+@keyframes cn-glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(59,130,246,0.3); }
+  50%       { box-shadow: 0 0 24px rgba(59,130,246,0.6), 0 0 48px rgba(59,130,246,0.2); }
+}
+
+/* Ring pulse (for online indicators) */
+@keyframes cn-ring-pulse {
+  0%   { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* Shimmer (skeleton loaders) */
+@keyframes cn-shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Skeleton wave */
+@keyframes cn-skeleton-wave {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Spin */
+@keyframes cn-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Spin slow */
+@keyframes cn-spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Data packet travel */
+@keyframes cn-packet-travel {
+  0%   { offset-distance: 0%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+
+/* Node pulse (topology) */
+@keyframes cn-node-pulse {
+  0%, 100% { r: 6; opacity: 1; }
+  50%       { r: 8; opacity: 0.8; }
+}
+
+/* Hash scramble (deduplication) */
+@keyframes cn-hash-reveal {
+  0%   { opacity: 0; letter-spacing: 0.3em; filter: blur(4px); }
+  100% { opacity: 1; letter-spacing: 0.05em; filter: blur(0); }
+}
+
+/* Counter number tick */
+@keyframes cn-counter-tick {
+  0%   { transform: translateY(0); }
+  25%  { transform: translateY(-4px); }
+  75%  { transform: translateY(4px); }
+  100% { transform: translateY(0); }
+}
+
+/* Toast in */
+@keyframes cn-toast-in {
+  from { opacity: 0; transform: translateX(100%) scale(0.9); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+/* Toast out */
+@keyframes cn-toast-out {
+  from { opacity: 1; transform: translateX(0) scale(1); max-height: 200px; }
+  to   { opacity: 0; transform: translateX(80px) scale(0.9); max-height: 0; padding: 0; margin: 0; }
+}
+
+/* Progress fill */
+@keyframes cn-progress-fill {
+  from { width: 0%; }
+  to   { width: var(--fill-width, 100%); }
+}
+
+/* Chart bar grow */
+@keyframes cn-bar-grow {
+  from { transform: scaleY(0); transform-origin: bottom; }
+  to   { transform: scaleY(1); transform-origin: bottom; }
+}
+
+/* Replication packet */
+@keyframes cn-replicate {
+  0%   { left: 0%; opacity: 0; }
+  5%   { opacity: 1; }
+  95%  { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+/* Orbit */
+@keyframes cn-orbit {
+  from { transform: rotate(0deg) translateX(60px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(60px) rotate(-360deg); }
+}
+
+/* Wave (network activity) */
+@keyframes cn-wave {
+  0%,100% { transform: scaleY(0.4); }
+  50%      { transform: scaleY(1); }
+}
+
+/* Typing cursor */
+@keyframes cn-cursor-blink {
+  0%, 50%  { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Entry stagger base (used with JS) */
+@keyframes cn-stagger-reveal {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Background orb drift */
+@keyframes cn-orb-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(40px, -30px) scale(1.05); }
+  66%       { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+@keyframes cn-orb-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(-30px, 20px) scale(0.96); }
+  66%       { transform: translate(25px, -25px) scale(1.04); }
+}
+
+/* ============================================================================
+   ANIMATION UTILITY CLASSES
+   ============================================================================ */
+
+/* Fade variants */
+.cn-anim-fade-in  { animation: cn-fade-in 0.5s var(--ease-out-quart) both; }
+.cn-anim-fade-out { animation: cn-fade-out 0.3s var(--ease-in-out) both; }
+
+/* Slide variants */
+.cn-anim-slide-up    { animation: cn-slide-up    0.5s var(--ease-out-quart) both; }
+.cn-anim-slide-down  { animation: cn-slide-down  0.4s var(--ease-out-quart) both; }
+.cn-anim-slide-left  { animation: cn-slide-left  0.5s var(--ease-out-quart) both; }
+.cn-anim-slide-right { animation: cn-slide-right 0.5s var(--ease-out-quart) both; }
+
+/* Scale variants */
+.cn-anim-scale-in  { animation: cn-scale-in  0.4s var(--ease-spring) both; }
+.cn-anim-scale-out { animation: cn-scale-out 0.3s var(--ease-in-out) both; }
+
+/* Bounce */
+.cn-anim-bounce-in { animation: cn-bounce-in 0.6s var(--ease-spring) both; }
+
+/* Float */
+.cn-anim-float        { animation: cn-float 6s ease-in-out infinite; }
+.cn-anim-float-subtle { animation: cn-float-subtle 4s ease-in-out infinite; }
+
+/* Spin */
+.cn-anim-spin      { animation: cn-spin 1s linear infinite; }
+.cn-anim-spin-slow { animation: cn-spin-slow 8s linear infinite; }
+
+/* Glow */
+.cn-anim-glow-pulse { animation: cn-glow-pulse 2.5s ease-in-out infinite; }
+
+/* Delay utilities */
+.cn-delay-100 { animation-delay: 0.1s; }
+.cn-delay-200 { animation-delay: 0.2s; }
+.cn-delay-300 { animation-delay: 0.3s; }
+.cn-delay-400 { animation-delay: 0.4s; }
+.cn-delay-500 { animation-delay: 0.5s; }
+.cn-delay-600 { animation-delay: 0.6s; }
+.cn-delay-700 { animation-delay: 0.7s; }
+.cn-delay-800 { animation-delay: 0.8s; }
+.cn-delay-900 { animation-delay: 0.9s; }
+.cn-delay-1000 { animation-delay: 1s; }
+
+/* Duration utilities */
+.cn-duration-100 { animation-duration: 0.1s; }
+.cn-duration-200 { animation-duration: 0.2s; }
+.cn-duration-300 { animation-duration: 0.3s; }
+.cn-duration-500 { animation-duration: 0.5s; }
+.cn-duration-700 { animation-duration: 0.7s; }
+.cn-duration-1000 { animation-duration: 1s; }
+.cn-duration-1500 { animation-duration: 1.5s; }
+
+/* ============================================================================
+   SCROLL REVEAL (JS-triggered via IntersectionObserver)
+   ============================================================================ */
+.cn-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s var(--ease-out-quart), transform 0.6s var(--ease-out-quart);
+}
+
+.cn-reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cn-reveal-left {
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 0.6s var(--ease-out-quart), transform 0.6s var(--ease-out-quart);
+}
+
+.cn-reveal-left.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.cn-reveal-right {
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity 0.6s var(--ease-out-quart), transform 0.6s var(--ease-out-quart);
+}
+
+.cn-reveal-right.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ============================================================================
+   BACKGROUND DECORATIVE ORBS
+   ============================================================================ */
+.cn-bg-orbs {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.cn-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.08;
+}
+
+.cn-orb-1 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, #3B82F6, transparent 70%);
+  top: -150px;
+  right: -100px;
+  animation: cn-orb-drift-1 18s ease-in-out infinite;
+}
+
+.cn-orb-2 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #8B5CF6, transparent 70%);
+  bottom: -100px;
+  left: -80px;
+  animation: cn-orb-drift-2 22s ease-in-out infinite;
+}
+
+.cn-orb-3 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, #22D3EE, transparent 70%);
+  top: 40%;
+  left: 40%;
+  animation: cn-orb-drift-1 14s ease-in-out infinite reverse;
+  opacity: 0.05;
+}
+
+/* ============================================================================
+   LIVE INDICATOR
+   ============================================================================ */
+.cn-live-dot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cn-live-dot::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--success);
+  animation: cn-ring-pulse 1.8s ease-out infinite;
+}
+
+.cn-live-dot-inner {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================================================
+   MAGNETIC BUTTON EFFECT (JS-enhanced)
+   ============================================================================ */
+.cn-magnetic {
+  transition: transform 0.3s var(--ease-spring);
+}
+
+/* ============================================================================
+   PAGE TRANSITION WRAPPER
+   ============================================================================ */
+.cn-page-transition-enter {
+  animation: cn-slide-up 0.4s var(--ease-out-quart) both;
+}
+
+.cn-page-transition-exit {
+  animation: cn-fade-out 0.2s var(--ease-in-out) both;
+}
+
+/* ============================================================================
+   CHART ANIMATIONS
+   ============================================================================ */
+.cn-chart-bar {
+  animation: cn-bar-grow 1s var(--ease-out-quart) both;
+}
+
+/* Staggered items */
+.cn-stagger > * {
+  animation: cn-stagger-reveal 0.5s var(--ease-out-quart) both;
+}
+
+.cn-stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.cn-stagger > *:nth-child(2) { animation-delay: 0.10s; }
+.cn-stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.cn-stagger > *:nth-child(4) { animation-delay: 0.20s; }
+.cn-stagger > *:nth-child(5) { animation-delay: 0.25s; }
+.cn-stagger > *:nth-child(6) { animation-delay: 0.30s; }
+.cn-stagger > *:nth-child(7) { animation-delay: 0.35s; }
+.cn-stagger > *:nth-child(8) { animation-delay: 0.40s; }
+
+/* ============================================================================
+   NETWORK ACTIVITY BARS (wave animation)
+   ============================================================================ */
+.cn-wave-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 24px;
+}
+
+.cn-wave-bar {
+  width: 3px;
+  background: var(--blue-400);
+  border-radius: 2px;
+  animation: cn-wave 1.2s ease-in-out infinite;
+}
+
+.cn-wave-bar:nth-child(1) { animation-delay: 0.0s; height: 60%; }
+.cn-wave-bar:nth-child(2) { animation-delay: 0.1s; height: 80%; }
+.cn-wave-bar:nth-child(3) { animation-delay: 0.2s; height: 100%; }
+.cn-wave-bar:nth-child(4) { animation-delay: 0.3s; height: 70%; }
+.cn-wave-bar:nth-child(5) { animation-delay: 0.4s; height: 90%; }
+.cn-wave-bar:nth-child(6) { animation-delay: 0.5s; height: 60%; }
+.cn-wave-bar:nth-child(7) { animation-delay: 0.2s; height: 40%; }
+
+/* ============================================================================
+   TYPING CURSOR
+   ============================================================================ */
+.cn-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--blue-400);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: cn-cursor-blink 1s step-end infinite;
+}
+
+/* ============================================================================
+   REDUCE MOTION PREFERENCE
+   ============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

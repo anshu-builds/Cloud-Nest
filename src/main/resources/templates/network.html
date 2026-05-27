@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CloudNest Network Activity — Real-time distributed network monitoring">
+    <title>CloudNest — Network Activity</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link th:href="@{/css/design-system.css}" rel="stylesheet">
+    <link th:href="@{/css/animations.css}" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@0.325.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+    <style>
+        .cn-chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-xl);
+            padding: var(--space-5);
+            transition: var(--transition-slow);
+        }
+        .cn-chart-card:hover {
+            border-color: var(--border-focus);
+            box-shadow: var(--shadow-card);
+        }
+        .cn-chart-title {
+            font-size: var(--text-sm);
+            font-weight: var(--fw-semibold);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-4);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        .cn-event-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .cn-event-row {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: var(--space-3);
+            align-items: center;
+            padding: var(--space-3) var(--space-4);
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: var(--text-xs);
+            transition: background 0.15s;
+        }
+        .cn-event-row:hover { background: var(--bg-glass); }
+        .cn-event-row:last-child { border-bottom: none; }
+        .cn-event-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .cn-event-type { color: var(--text-muted); font-family: var(--font-mono); }
+        .cn-event-size { color: var(--text-muted); font-family: var(--font-mono); }
+        .cn-event-time { color: var(--text-disabled); font-size: 10px; }
+
+        .cn-traffic-counter {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--space-5);
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-xl);
+            text-align: center;
+        }
+        .cn-traffic-val {
+            font-size: var(--text-3xl);
+            font-weight: var(--fw-bold);
+            letter-spacing: -0.04em;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            line-height: 1;
+        }
+        .cn-traffic-unit {
+            font-size: var(--text-base);
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .cn-traffic-label {
+            font-size: var(--text-xs);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            font-weight: 600;
+            margin-top: var(--space-1);
+        }
+        .cn-traffic-trend {
+            font-size: var(--text-xs);
+            color: var(--success);
+            margin-top: var(--space-2);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Sparkline container */
+        .cn-sparkline-wrap { position: relative; height: 200px; }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: appShellStart}"></div>
+
+<div class="cn-workspace">
+
+    <!-- Page Header -->
+    <div class="cn-flex cn-justify-between cn-items-center cn-mb-6 cn-reveal">
+        <div>
+            <h1 style="font-size:var(--text-2xl);font-weight:var(--fw-bold);letter-spacing:-0.03em;color:var(--text-primary);margin-bottom:4px;">
+                Network Activity
+            </h1>
+            <p style="font-size:var(--text-sm);color:var(--text-muted);">
+                Real-time distributed data transfer monitoring
+            </p>
+        </div>
+        <div class="cn-flex cn-items-center cn-gap-3">
+            <div style="display:flex;align-items:center;gap:var(--space-2);">
+                <div class="cn-live-dot">
+                    <div class="cn-live-dot-inner" style="width:8px;height:8px;"></div>
+                </div>
+                <span style="font-size:var(--text-xs);color:var(--text-muted);">Live feed</span>
+            </div>
+            <span class="cn-badge online" style="padding:6px 14px;font-size:var(--text-xs);">
+                <span class="cn-status-dot"></span>
+                Network Nominal
+            </span>
+        </div>
+    </div>
+
+    <!-- Traffic Counters -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-4);margin-bottom:var(--space-5);">
+        <div class="cn-traffic-counter cn-reveal">
+            <div class="cn-wave-bars" style="margin-bottom:var(--space-3);">
+                <div class="cn-wave-bar"></div><div class="cn-wave-bar"></div>
+                <div class="cn-wave-bar"></div><div class="cn-wave-bar"></div>
+                <div class="cn-wave-bar"></div><div class="cn-wave-bar"></div>
+                <div class="cn-wave-bar"></div>
+            </div>
+            <div class="cn-traffic-val" id="counterBandwidth">12.4<span class="cn-traffic-unit"> MB/s</span></div>
+            <div class="cn-traffic-label">Bandwidth</div>
+            <div class="cn-traffic-trend"><i data-lucide="arrow-up" style="width:11px;height:11px;"></i> +3.2% from avg</div>
+        </div>
+        <div class="cn-traffic-counter cn-reveal cn-delay-100">
+            <div style="font-size:28px;margin-bottom:var(--space-3);color:var(--blue-400);">
+                <i data-lucide="upload" style="width:28px;height:28px;"></i>
+            </div>
+            <div class="cn-traffic-val" id="counterTx">8.9<span class="cn-traffic-unit"> MB/s</span></div>
+            <div class="cn-traffic-label">Upload (TX)</div>
+            <div class="cn-traffic-trend"><i data-lucide="arrow-up" style="width:11px;height:11px;"></i> Normal</div>
+        </div>
+        <div class="cn-traffic-counter cn-reveal cn-delay-200">
+            <div style="font-size:28px;margin-bottom:var(--space-3);color:var(--purple-400);">
+                <i data-lucide="download" style="width:28px;height:28px;"></i>
+            </div>
+            <div class="cn-traffic-val" id="counterRx">3.5<span class="cn-traffic-unit"> MB/s</span></div>
+            <div class="cn-traffic-label">Download (RX)</div>
+            <div class="cn-traffic-trend"><i data-lucide="arrow-down" style="width:11px;height:11px;color:var(--cyan-400);"></i> Low demand</div>
+        </div>
+        <div class="cn-traffic-counter cn-reveal cn-delay-300">
+            <div style="font-size:28px;margin-bottom:var(--space-3);color:var(--success);">
+                <i data-lucide="zap" style="width:28px;height:28px;"></i>
+            </div>
+            <div class="cn-traffic-val" id="counterLatency">12<span class="cn-traffic-unit"> ms</span></div>
+            <div class="cn-traffic-label">Avg Latency</div>
+            <div class="cn-traffic-trend"><i data-lucide="check-circle" style="width:11px;height:11px;"></i> Excellent</div>
+        </div>
+    </div>
+
+    <!-- Main Chart + Event Feed -->
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:var(--space-5);margin-bottom:var(--space-5);">
+
+        <!-- Bandwidth Chart -->
+        <div class="cn-chart-card cn-reveal">
+            <div class="cn-chart-title">
+                <i data-lucide="activity" style="width:14px;height:14px;color:var(--blue-400);"></i>
+                Live Bandwidth (MB/s)
+                <span style="margin-left:auto;font-size:10px;color:var(--text-disabled);font-family:var(--font-mono);">Last 60s</span>
+            </div>
+            <div class="cn-sparkline-wrap">
+                <canvas id="bandwidthChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Event Feed -->
+        <div class="cn-chart-card cn-reveal cn-delay-100" style="padding:0;overflow:hidden;">
+            <div style="padding:var(--space-5) var(--space-5) var(--space-3);">
+                <div class="cn-chart-title" style="margin-bottom:0;">
+                    <i data-lucide="list" style="width:14px;height:14px;color:var(--blue-400);"></i>
+                    Event Stream
+                </div>
+            </div>
+            <div class="cn-event-feed" id="eventFeed">
+                <!-- Injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Per-Node Bandwidth Row -->
+    <div class="cn-section-label cn-reveal">
+        <i data-lucide="server" style="width:12px;height:12px;display:inline;"></i>
+        Per-Node Traffic
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);">
+
+        <div class="cn-chart-card cn-reveal">
+            <div class="cn-chart-title">
+                <i data-lucide="server" style="width:13px;height:13px;color:var(--blue-400);"></i>
+                Node Alpha
+                <span class="cn-badge online" style="margin-left:auto;font-size:10px;"><span class="cn-status-dot"></span>Online</span>
+            </div>
+            <div style="height:120px;">
+                <canvas id="nodeAlphaChart"></canvas>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:var(--space-3);font-size:var(--text-xs);color:var(--text-muted);">
+                <span>TX: <strong style="color:var(--blue-400);">4.2 MB/s</strong></span>
+                <span>RX: <strong style="color:var(--purple-400);">1.8 MB/s</strong></span>
+                <span>12ms</span>
+            </div>
+        </div>
+
+        <div class="cn-chart-card cn-reveal cn-delay-100">
+            <div class="cn-chart-title">
+                <i data-lucide="server" style="width:13px;height:13px;color:var(--purple-400);"></i>
+                Node Beta
+                <span class="cn-badge online" style="margin-left:auto;font-size:10px;"><span class="cn-status-dot"></span>Online</span>
+            </div>
+            <div style="height:120px;">
+                <canvas id="nodeBetaChart"></canvas>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:var(--space-3);font-size:var(--text-xs);color:var(--text-muted);">
+                <span>TX: <strong style="color:var(--purple-400);">3.1 MB/s</strong></span>
+                <span>RX: <strong style="color:var(--blue-400);">1.2 MB/s</strong></span>
+                <span>18ms</span>
+            </div>
+        </div>
+
+        <div class="cn-chart-card cn-reveal cn-delay-200">
+            <div class="cn-chart-title">
+                <i data-lucide="server" style="width:13px;height:13px;color:var(--success);"></i>
+                Node Gamma
+                <span class="cn-badge online" style="margin-left:auto;font-size:10px;"><span class="cn-status-dot"></span>Online</span>
+            </div>
+            <div style="height:120px;">
+                <canvas id="nodeGammaChart"></canvas>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:var(--space-3);font-size:var(--text-xs);color:var(--text-muted);">
+                <span>TX: <strong style="color:var(--success);">1.6 MB/s</strong></span>
+                <span>RX: <strong style="color:var(--cyan-400);">0.5 MB/s</strong></span>
+                <span>24ms</span>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /.cn-workspace -->
+
+<script>
+/* ── Chart.js shared defaults ── */
+Chart.defaults.color = 'rgba(150,163,180,0.7)';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+Chart.defaults.font.family = 'Inter, sans-serif';
+Chart.defaults.font.size = 11;
+
+// ── Shared theme helpers ──────────────────────────────────────────────────
+function makeGrad(ctx, color1, color2) {
+    const g = ctx.createLinearGradient(0, 0, 0, 200);
+    g.addColorStop(0, color1);
+    g.addColorStop(1, color2);
+    return g;
+}
+
+// ── Bandwidth History Data ────────────────────────────────────────────────
+const N_POINTS = 60;
+const bwData = Array.from({ length: N_POINTS }, () => 6 + Math.random() * 14);
+const bwLabels = Array.from({ length: N_POINTS }, (_, i) => `-${N_POINTS - i}s`);
+
+const bwCtx = document.getElementById('bandwidthChart');
+let bwChart;
+if (bwCtx) {
+    const g = bwCtx.getContext('2d');
+    bwChart = new Chart(bwCtx, {
+        type: 'line',
+        data: {
+            labels: bwLabels,
+            datasets: [
+                {
+                    label: 'TX (MB/s)',
+                    data: Array.from({ length: N_POINTS }, () => 4 + Math.random() * 8),
+                    borderColor: '#3B82F6',
+                    backgroundColor: 'rgba(59,130,246,0.08)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                },
+                {
+                    label: 'RX (MB/s)',
+                    data: Array.from({ length: N_POINTS }, () => 2 + Math.random() * 5),
+                    borderColor: '#8B5CF6',
+                    backgroundColor: 'rgba(139,92,246,0.05)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                },
+            ],
+        },
+        options: {
+            animation: { duration: 0 },
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', align: 'end', labels: { boxWidth: 12, padding: 16 } },
+                tooltip: { mode: 'index', intersect: false },
+            },
+            scales: {
+                x: { display: false },
+                y: { min: 0, max: 25, ticks: { callback: v => v + ' MB/s', stepSize: 5 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+            },
+        },
+    });
+}
+
+// ── Node micro-charts ─────────────────────────────────────────────────────
+function makeNodeChart(id, color) {
+    const ctx = document.getElementById(id);
+    if (!ctx) return null;
+    const data = Array.from({ length: 30 }, () => 0.5 + Math.random() * 6);
+    return new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Array(30).fill(''),
+            datasets: [{
+                data,
+                borderColor: color,
+                backgroundColor: color.replace(')', ', 0.08)').replace('rgb', 'rgba'),
+                borderWidth: 1.5,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+            }],
+        },
+        options: {
+            animation: { duration: 0 },
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            scales: { x: { display: false }, y: { display: false } },
+        },
+    });
+}
+const alphaChart = makeNodeChart('nodeAlphaChart', '#3B82F6');
+const betaChart  = makeNodeChart('nodeBetaChart',  '#8B5CF6');
+const gammaChart = makeNodeChart('nodeGammaChart', '#22C55E');
+
+// ── Live data simulation ──────────────────────────────────────────────────
+function pushPoint(chart, min, max) {
+    if (!chart) return;
+    chart.data.datasets[0].data.push(min + Math.random() * (max - min));
+    chart.data.datasets[0].data.shift();
+    chart.update('none');
+}
+
+setInterval(() => {
+    if (bwChart) {
+        const newTx = 4 + Math.random() * 8;
+        const newRx = 2 + Math.random() * 5;
+        bwChart.data.datasets[0].data.push(newTx);
+        bwChart.data.datasets[0].data.shift();
+        bwChart.data.datasets[1].data.push(newRx);
+        bwChart.data.datasets[1].data.shift();
+        bwChart.update('none');
+        // Update counters
+        document.getElementById('counterTx').innerHTML = newTx.toFixed(1) + '<span class="cn-traffic-unit"> MB/s</span>';
+        document.getElementById('counterRx').innerHTML = newRx.toFixed(1) + '<span class="cn-traffic-unit"> MB/s</span>';
+        document.getElementById('counterBandwidth').innerHTML = (newTx + newRx).toFixed(1) + '<span class="cn-traffic-unit"> MB/s</span>';
+    }
+    pushPoint(alphaChart, 1, 7);
+    pushPoint(betaChart,  0.5, 5);
+    pushPoint(gammaChart, 0.2, 3);
+}, 800);
+
+// ── Event feed ───────────────────────────────────────────────────────────
+const EVENT_TYPES = [
+    { msg: 'File replicated', color: 'var(--blue-400)', type: 'REPLICATE' },
+    { msg: 'Read request',    color: 'var(--cyan-400)', type: 'READ' },
+    { msg: 'Upload chunk',    color: 'var(--success)',  type: 'WRITE' },
+    { msg: 'Dedup hit',       color: 'var(--warning)',  type: 'DEDUP' },
+    { msg: 'Sync completed',  color: 'var(--purple-400)', type: 'SYNC' },
+    { msg: 'Hash verified',   color: 'var(--success)',  type: 'HASH' },
+];
+const NODES_LIST = ['Alpha→Beta', 'Beta→Gamma', 'Alpha→Gamma', 'Gamma→Beta'];
+const SIZES = ['128 KB', '2.4 MB', '780 KB', '4.1 MB', '340 KB', '1.8 MB'];
+
+function addEvent() {
+    const feed = document.getElementById('eventFeed');
+    if (!feed) return;
+    const ev = EVENT_TYPES[Math.floor(Math.random() * EVENT_TYPES.length)];
+    const row = document.createElement('div');
+    row.className = 'cn-event-row';
+    row.style.animation = 'cn-slide-down 0.25s ease both';
+    row.innerHTML = `
+        <span class="cn-event-dot" style="background:${ev.color};"></span>
+        <span class="cn-event-type">${ev.type}</span>
+        <span class="cn-event-type">${NODES_LIST[Math.floor(Math.random() * NODES_LIST.length)]}</span>
+        <span class="cn-event-size">${SIZES[Math.floor(Math.random() * SIZES.length)]}</span>
+    `;
+    feed.insertBefore(row, feed.firstChild);
+    while (feed.children.length > 18) feed.removeChild(feed.lastChild);
+}
+
+// Seed the feed
+for (let i = 0; i < 8; i++) addEvent();
+setInterval(addEvent, 1100);
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+});
+</script>
+
+<div th:replace="~{fragments/header :: appShellEnd}"></div>
+</body>
+</html>

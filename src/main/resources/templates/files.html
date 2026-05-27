@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CloudNest File Explorer — Browse and manage your distributed cloud storage">
+    <title>CloudNest — File Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link th:href="@{/css/design-system.css}" rel="stylesheet">
+    <link th:href="@{/css/animations.css}" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@0.325.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════ APP SHELL START ═══════════════════════ -->
+<div th:replace="~{fragments/header :: appShellStart}"></div>
+
+<!-- ═══════════════════════ PAGE WORKSPACE ═══════════════════════ -->
+<div class="cn-workspace">
+
+    <!-- ── Alert Messages ── -->
+    <div th:if="${success}" class="cn-alert success">
+        <i data-lucide="check-circle" class="cn-alert-icon" style="width:16px;height:16px;"></i>
+        <div class="cn-alert-content">
+            <div class="cn-alert-title">Success</div>
+            <div class="cn-alert-message" th:text="${success}"></div>
+        </div>
+        <button class="cn-alert-close" onclick="this.closest('.cn-alert').remove()">✕</button>
+    </div>
+    <div th:if="${error}" class="cn-alert error">
+        <i data-lucide="alert-circle" class="cn-alert-icon" style="width:16px;height:16px;"></i>
+        <div class="cn-alert-content">
+            <div class="cn-alert-title">Error</div>
+            <div class="cn-alert-message" th:text="${error}"></div>
+        </div>
+        <button class="cn-alert-close" onclick="this.closest('.cn-alert').remove()">✕</button>
+    </div>
+
+    <!-- ── Share Link Banner ── -->
+    <div th:if="${shareLink}" class="cn-alert info" id="shareLinkAlert">
+        <i data-lucide="share-2" class="cn-alert-icon" style="width:16px;height:16px;"></i>
+        <div class="cn-alert-content">
+            <div class="cn-alert-title">Secure Share Link Generated</div>
+            <div class="cn-input-group" style="margin-top:var(--space-2);">
+                <input type="text" class="cn-input" th:value="${shareLink}" id="shareLinkInput" readonly
+                       style="font-family:var(--font-mono);font-size:var(--text-xs);">
+                <button class="cn-btn cn-btn-primary" onclick="copyShareLink()" type="button">
+                    <i data-lucide="copy" style="width:13px;height:13px;"></i>
+                    Copy
+                </button>
+            </div>
+        </div>
+        <button class="cn-alert-close" onclick="this.closest('.cn-alert').remove()">✕</button>
+    </div>
+
+    <!-- ── Page Header ── -->
+    <div class="cn-flex cn-justify-between cn-items-center cn-mb-6 cn-reveal">
+        <div>
+            <h1 style="font-size:var(--text-2xl);font-weight:var(--fw-bold);letter-spacing:-0.03em;color:var(--text-primary);margin-bottom:4px;">
+                <span th:if="${searchMode}">Search Results</span>
+                <span th:unless="${searchMode}">File Explorer</span>
+            </h1>
+
+            <!-- Breadcrumbs -->
+            <nav th:if="${breadcrumbs != null}" aria-label="File path" style="margin-top:var(--space-2);">
+                <div class="cn-breadcrumb">
+                    <div class="cn-breadcrumb-item">
+                        <a href="/files">
+                            <i data-lucide="home" style="width:12px;height:12px;display:inline;"></i>
+                            Root
+                        </a>
+                    </div>
+                    <div th:each="crumb,stat : ${breadcrumbs}" class="cn-breadcrumb-item"
+                         th:classappend="${stat.last} ? 'active' : ''">
+                        <span class="cn-breadcrumb-separator">›</span>
+                        <a th:unless="${stat.last}"
+                           th:href="@{/files(folderId=${crumb.id})}"
+                           th:text="${crumb.name}">Folder</a>
+                        <span th:if="${stat.last}" th:text="${crumb.name}">Folder</span>
+                    </div>
+                </div>
+            </nav>
+
+            <p th:if="${searchMode}" style="font-size:var(--text-sm);color:var(--text-muted);margin-top:var(--space-1);">
+                Results for "<strong th:text="${searchQuery}" style="color:var(--text-secondary);"></strong>"
+            </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="cn-flex cn-gap-3 cn-items-center">
+            <!-- View Toggle -->
+            <div class="cn-view-toggle">
+                <button class="cn-view-toggle-btn" id="viewListBtn" title="List view" aria-label="List view">
+                    <i data-lucide="list" style="width:14px;height:14px;"></i>
+                </button>
+                <button class="cn-view-toggle-btn" id="viewGridBtn" title="Grid view" aria-label="Grid view">
+                    <i data-lucide="grid-3x3" style="width:14px;height:14px;"></i>
+                </button>
+            </div>
+            <button class="cn-btn cn-btn-secondary cn-btn-sm" onclick="openModal('createFolderModalOverlay')">
+                <i data-lucide="folder-plus" style="width:14px;height:14px;"></i>
+                New Folder
+            </button>
+            <button class="cn-btn cn-btn-primary cn-btn-sm" onclick="openModal('uploadModalOverlay')">
+                <i data-lucide="upload-cloud" style="width:14px;height:14px;"></i>
+                Upload
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Folders Section ── -->
+    <div th:if="${folders != null and !folders.isEmpty()}" style="margin-bottom:var(--space-6);">
+        <div class="cn-section-label cn-reveal">
+            <i data-lucide="folder" style="width:12px;height:12px;display:inline;"></i>
+            Folders
+        </div>
+        <div class="cn-folder-grid cn-stagger">
+            <div th:each="folder : ${folders}" class="cn-folder-card cn-reveal" style="position:relative;">
+                <a th:href="@{/files(folderId=${folder.id})}" style="text-decoration:none;display:contents;">
+                    <div class="cn-folder-icon-wrap">
+                        <i data-lucide="folder" style="width:28px;height:28px;color:var(--warning);"></i>
+                    </div>
+                    <div class="cn-folder-name" th:text="${folder.name}">Folder</div>
+                    <div class="cn-folder-meta">
+                        <span th:text="${folder.fileCount}">0</span> files ·
+                        <span th:text="${folder.subFolderCount}">0</span> folders
+                    </div>
+                </a>
+                <!-- Actions (appear on hover via CSS) -->
+                <div class="cn-folder-actions">
+                    <a th:href="@{/folders/download/{id}(id=${folder.id})}"
+                       class="cn-btn cn-btn-icon" style="padding:5px;" title="Download ZIP">
+                        <i data-lucide="archive" style="width:12px;height:12px;"></i>
+                    </a>
+                    <button type="button" class="cn-btn cn-btn-icon" style="padding:5px;" title="Move"
+                            th:onclick="'openMoveModal(\'folder\', ' + ${folder.id} + ')'">
+                        <i data-lucide="move" style="width:12px;height:12px;"></i>
+                    </button>
+                    <form th:action="@{/folders/delete/{id}(id=${folder.id})}" method="post" style="margin:0;"
+                          onsubmit="return confirm('Delete this folder and all its contents?')">
+                        <input type="hidden" name="parentId" th:value="${currentFolderId}">
+                        <button type="submit" class="cn-btn cn-btn-icon" style="padding:5px;color:var(--danger);" title="Delete">
+                            <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Files Section ── -->
+    <div class="cn-reveal">
+        <div class="cn-section-label">
+            <i data-lucide="file" style="width:12px;height:12px;display:inline;"></i>
+            Files
+        </div>
+
+        <!-- LIST VIEW (default) -->
+        <div id="filesListView" th:if="${files != null and !files.isEmpty()}" class="cn-card">
+            <div class="cn-table-wrapper">
+                <table class="cn-table">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Size</th>
+                        <th>Type</th>
+                        <th>Node</th>
+                        <th>Uploaded</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody class="cn-stagger">
+                    <tr th:each="file : ${files}">
+                        <td class="primary">
+                            <div class="cn-flex cn-items-center cn-gap-2">
+                                <i data-lucide="file" class="cn-file-icon" style="width:14px;height:14px;flex-shrink:0;"></i>
+                                <span th:text="${file.originalName}" class="cn-truncate" style="max-width:220px;"></span>
+                                <span th:if="${file.folderName != null}"
+                                      style="font-size:var(--text-xs);color:var(--text-disabled);display:flex;align-items:center;gap:3px;">
+                                    <i data-lucide="folder" style="width:10px;height:10px;"></i>
+                                    <span th:text="${file.folderName}">folder</span>
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <span style="font-family:var(--font-mono);font-size:var(--text-xs);"
+                                  th:text="${file.formattedSize}">0 B</span>
+                        </td>
+                        <td>
+                            <span class="cn-badge idle" style="font-size:10px;font-family:var(--font-mono);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                                  th:text="${file.fileType}">type</span>
+                        </td>
+                        <td>
+                            <span class="cn-badge node" th:text="${file.storageNode}">node1</span>
+                        </td>
+                        <td>
+                            <span style="font-size:var(--text-xs);color:var(--text-muted);"
+                                  th:text="${#temporals.format(file.uploadedAt, 'MMM dd, HH:mm')}">Jan 01</span>
+                        </td>
+                        <td style="text-align:right;">
+                            <div class="cn-flex cn-justify-end cn-gap-1">
+                                <a th:if="${file.fileType != null and (file.fileType.startsWith('image/') or file.fileType.startsWith('video/') or file.fileType.startsWith('audio/') or file.fileType.startsWith('text/') or file.fileType == 'application/pdf')}"
+                                   th:href="@{/files/preview/{id}(id=${file.id})}" target="_blank"
+                                   class="cn-btn cn-btn-icon cn-btn-sm" title="Preview">
+                                    <i data-lucide="eye" style="width:13px;height:13px;"></i>
+                                </a>
+                                <a th:href="@{/files/download/{id}(id=${file.id})}"
+                                   class="cn-btn cn-btn-icon cn-btn-sm" title="Download">
+                                    <i data-lucide="download" style="width:13px;height:13px;"></i>
+                                </a>
+                                <button type="button" class="cn-btn cn-btn-icon cn-btn-sm" title="Move"
+                                        th:onclick="'openMoveModal(\'file\', ' + ${file.id} + ')'">
+                                    <i data-lucide="move" style="width:13px;height:13px;"></i>
+                                </button>
+                                <form th:action="@{/share/generate/{id}(id=${file.id})}" method="post" style="display:inline;margin:0;">
+                                    <button type="submit" class="cn-btn cn-btn-icon cn-btn-sm" title="Share">
+                                        <i data-lucide="share-2" style="width:13px;height:13px;"></i>
+                                    </button>
+                                </form>
+                                <form th:action="@{/files/delete/{id}(id=${file.id})}" method="post" style="display:inline;margin:0;"
+                                      onsubmit="return confirm('Move this file to Recycle Bin?')">
+                                    <input type="hidden" name="folderId" th:value="${currentFolderId}">
+                                    <button type="submit" class="cn-btn cn-btn-icon cn-btn-sm"
+                                            style="color:var(--danger);" title="Delete">
+                                        <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- GRID VIEW (hidden by default, toggled via JS) -->
+        <div id="filesGridView" style="display:none;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:var(--space-3);"
+                 th:if="${files != null and !files.isEmpty()}" class="cn-stagger">
+                <div th:each="file : ${files}"
+                     style="background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-lg);padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2);transition:var(--transition-slow);cursor:default;"
+                     class="cn-reveal"
+                     onmouseover="this.style.borderColor='rgba(59,130,246,0.3)';this.style.transform='translateY(-2px)';"
+                     onmouseout="this.style.borderColor='';this.style.transform='';">
+                    <div style="font-size:32px;margin-bottom:var(--space-1);">
+                        <i data-lucide="file" style="width:32px;height:32px;color:var(--blue-400);"></i>
+                    </div>
+                    <div class="cn-truncate" style="font-size:var(--text-xs);font-weight:var(--fw-semibold);color:var(--text-primary);"
+                         th:text="${file.originalName}">file.txt</div>
+                    <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);"
+                         th:text="${file.formattedSize}">0 B</div>
+                    <span class="cn-badge node" style="width:fit-content;" th:text="${file.storageNode}">node1</span>
+                    <div class="cn-flex cn-gap-1" style="margin-top:auto;">
+                        <a th:href="@{/files/download/{id}(id=${file.id})}"
+                           class="cn-btn cn-btn-icon cn-btn-sm" style="flex:1;justify-content:center;" title="Download">
+                            <i data-lucide="download" style="width:12px;height:12px;"></i>
+                        </a>
+                        <form th:action="@{/files/delete/{id}(id=${file.id})}" method="post" style="margin:0;flex:1;"
+                              onsubmit="return confirm('Move to Recycle Bin?')">
+                            <input type="hidden" name="folderId" th:value="${currentFolderId}">
+                            <button type="submit" class="cn-btn cn-btn-icon cn-btn-sm"
+                                    style="width:100%;justify-content:center;color:var(--danger);" title="Delete">
+                                <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div th:if="${files == null or files.isEmpty()}" class="cn-card">
+            <div class="cn-empty-state">
+                <div class="cn-empty-icon cn-anim-float-subtle">
+                    <i data-lucide="upload-cloud" style="width:28px;height:28px;"></i>
+                </div>
+                <div class="cn-empty-title" th:if="${searchMode}">No files found</div>
+                <div class="cn-empty-title" th:unless="${searchMode}">This location is empty</div>
+                <div class="cn-empty-description" th:if="${searchMode}">
+                    Try a different search term or browse all files
+                </div>
+                <div class="cn-empty-description" th:unless="${searchMode}">
+                    Upload files or create folders to start organizing your distributed storage
+                </div>
+                <button th:unless="${searchMode}" class="cn-btn cn-btn-primary"
+                        style="margin-top:var(--space-4);"
+                        onclick="openModal('uploadModalOverlay')">
+                    <i data-lucide="upload-cloud" style="width:15px;height:15px;"></i>
+                    Upload to Node
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /.cn-workspace -->
+
+<!-- ═══════════════════════════════════════════
+     MODALS
+     ═══════════════════════════════════════════ -->
+
+<!-- Upload Modal -->
+<div class="cn-modal-overlay" id="uploadModalOverlay">
+    <div class="cn-modal">
+        <div class="cn-modal-header">
+            <div class="cn-modal-title">
+                <i data-lucide="upload-cloud" style="width:16px;height:16px;color:var(--blue-400);"></i>
+                Upload Files
+            </div>
+            <button class="cn-modal-close" onclick="closeModal('uploadModalOverlay')">✕</button>
+        </div>
+        <form th:action="@{/files/upload}" method="post" enctype="multipart/form-data">
+            <div class="cn-modal-body">
+                <div class="cn-dropzone" id="uploadZone">
+                    <div class="cn-dropzone-icon">
+                        <i data-lucide="upload-cloud" style="width:24px;height:24px;"></i>
+                    </div>
+                    <div class="cn-dropzone-title">Drop files to upload</div>
+                    <div class="cn-dropzone-subtitle">or <label for="fileInput" style="color:var(--blue-400);cursor:pointer;font-weight:600;">browse files</label></div>
+                    <div class="cn-dropzone-sub">SHA-256 dedup · Max 50 MB</div>
+                    <input type="file" id="fileInput" name="files" multiple required style="display:none;" onchange="updateFileName(this)">
+                    <p id="selectedFileName" style="margin-top:var(--space-3);font-size:var(--text-sm);color:var(--blue-400);font-weight:600;"></p>
+                </div>
+                <div class="cn-form-group" style="margin-top:var(--space-4);">
+                    <label class="cn-label">Destination Folder</label>
+                    <select name="folderId" class="cn-select">
+                        <option value="">Root</option>
+                        <option th:each="folder : ${allFolders}"
+                                th:value="${folder.id}"
+                                th:text="${folder.name}"
+                                th:selected="${folder.id == currentFolderId}">Folder</option>
+                    </select>
+                </div>
+            </div>
+            <div class="cn-modal-footer">
+                <button type="button" class="cn-btn cn-btn-secondary" onclick="closeModal('uploadModalOverlay')">Cancel</button>
+                <button type="submit" class="cn-btn cn-btn-primary">
+                    <i data-lucide="upload-cloud" style="width:14px;height:14px;"></i>
+                    Upload
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Create Folder Modal -->
+<div class="cn-modal-overlay" id="createFolderModalOverlay">
+    <div class="cn-modal">
+        <div class="cn-modal-header">
+            <div class="cn-modal-title">
+                <i data-lucide="folder-plus" style="width:16px;height:16px;color:var(--warning);"></i>
+                Create New Folder
+            </div>
+            <button class="cn-modal-close" onclick="closeModal('createFolderModalOverlay')">✕</button>
+        </div>
+        <form th:action="@{/folders/create}" method="post">
+            <div class="cn-modal-body">
+                <div class="cn-form-group">
+                    <label for="folderName" class="cn-label">Folder Name</label>
+                    <input type="text" class="cn-input" id="folderName" name="name"
+                           placeholder="e.g. Project Assets" required autofocus>
+                </div>
+                <input type="hidden" name="parentId" th:value="${currentFolderId}">
+            </div>
+            <div class="cn-modal-footer">
+                <button type="button" class="cn-btn cn-btn-secondary" onclick="closeModal('createFolderModalOverlay')">Cancel</button>
+                <button type="submit" class="cn-btn cn-btn-primary">
+                    <i data-lucide="folder-plus" style="width:14px;height:14px;"></i>
+                    Create
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Move Modal -->
+<div class="cn-modal-overlay" id="moveModalOverlay">
+    <div class="cn-modal">
+        <div class="cn-modal-header">
+            <div class="cn-modal-title">
+                <i data-lucide="move" style="width:16px;height:16px;color:var(--blue-400);"></i>
+                Move Item
+            </div>
+            <button class="cn-modal-close" onclick="closeModal('moveModalOverlay')">✕</button>
+        </div>
+        <form id="moveForm" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <div class="cn-modal-body">
+                <div class="cn-form-group">
+                    <label class="cn-label">Destination Folder</label>
+                    <select name="targetFolderId" class="cn-select">
+                        <option value="">Root</option>
+                        <option th:each="folder : ${allFolders}"
+                                th:value="${folder.id}"
+                                th:text="${folder.name}">Folder</option>
+                    </select>
+                </div>
+                <input type="hidden" name="currentFolderId" th:value="${currentFolderId}">
+            </div>
+            <div class="cn-modal-footer">
+                <button type="button" class="cn-btn cn-btn-secondary" onclick="closeModal('moveModalOverlay')">Cancel</button>
+                <button type="submit" class="cn-btn cn-btn-primary">
+                    <i data-lucide="move" style="width:14px;height:14px;"></i>
+                    Move
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Override openMoveModal to use new cn-modal-overlay
+function openMoveModal(type, id) {
+    const form = document.getElementById('moveForm');
+    if (form) {
+        form.action = type === 'file' ? `/files/move/${id}` : `/folders/move/${id}`;
+    }
+    openModal('moveModalOverlay');
+}
+</script>
+
+<!-- ═══════════════════════ APP SHELL END ═══════════════════════ -->
+<div th:replace="~{fragments/header :: appShellEnd}"></div>
+
+</body>
+</html>

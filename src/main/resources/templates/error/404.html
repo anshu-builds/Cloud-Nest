@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudNest - Page Not Found</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link th:href="@{/css/design-system.css}" rel="stylesheet">
+    <link th:href="@{/css/animations.css}" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@0.325.0/dist/umd/lucide.min.js"></script>
+</head>
+<body class="cn-auth-body">
+<main class="cn-public-shell">
+    <section class="cn-public-card cn-reveal">
+        <div class="cn-public-state">
+            <div class="cn-empty-icon">
+                <i data-lucide="cloud-off" style="width:30px;height:30px;"></i>
+            </div>
+            <p class="cn-public-kicker">404</p>
+            <h1 class="cn-public-title">Page not found</h1>
+            <p class="cn-public-copy">The file, folder, or page you are looking for does not exist, has moved, or is unavailable.</p>
+            <a th:href="@{/dashboard}" class="cn-btn cn-btn-primary">
+                <i data-lucide="layout-dashboard" style="width:15px;height:15px;"></i>
+                Return to Dashboard
+            </a>
+        </div>
+    </section>
+</main>
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+</body>
+</html>

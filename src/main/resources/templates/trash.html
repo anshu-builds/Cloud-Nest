@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CloudNest Recycle Bin — Restore or permanently delete files">
+    <title>CloudNest — Recycle Bin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link th:href="@{/css/design-system.css}" rel="stylesheet">
+    <link th:href="@{/css/animations.css}" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@0.325.0/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════ APP SHELL START ═══════════════════════ -->
+<div th:replace="~{fragments/header :: appShellStart}"></div>
+
+<!-- ═══════════════════════ PAGE WORKSPACE ═══════════════════════ -->
+<div class="cn-workspace">
+
+    <!-- ── Alert Messages ── -->
+    <div th:if="${success}" class="cn-alert success">
+        <i data-lucide="check-circle" class="cn-alert-icon" style="width:16px;height:16px;"></i>
+        <div class="cn-alert-content">
+            <div class="cn-alert-title">Restored</div>
+            <div class="cn-alert-message" th:text="${success}"></div>
+        </div>
+        <button class="cn-alert-close" onclick="this.closest('.cn-alert').remove()">✕</button>
+    </div>
+    <div th:if="${error}" class="cn-alert error">
+        <i data-lucide="alert-circle" class="cn-alert-icon" style="width:16px;height:16px;"></i>
+        <div class="cn-alert-content">
+            <div class="cn-alert-title">Error</div>
+            <div class="cn-alert-message" th:text="${error}"></div>
+        </div>
+        <button class="cn-alert-close" onclick="this.closest('.cn-alert').remove()">✕</button>
+    </div>
+
+    <!-- ── Page Header ── -->
+    <div class="cn-flex cn-justify-between cn-items-center cn-mb-6 cn-reveal">
+        <div>
+            <h1 style="font-size:var(--text-2xl);font-weight:var(--fw-bold);letter-spacing:-0.03em;color:var(--text-primary);margin-bottom:4px;">
+                Recycle Bin
+            </h1>
+            <p style="font-size:var(--text-sm);color:var(--text-muted);">
+                Deleted items — restore or permanently remove from all nodes
+            </p>
+        </div>
+        <!-- Warning banner if items exist -->
+        <div th:if="${(files != null and !files.isEmpty()) or (folders != null and !folders.isEmpty())}"
+             class="cn-badge warning" style="padding:6px 14px;font-size:var(--text-xs);">
+            <i data-lucide="alert-triangle" style="width:12px;height:12px;display:inline;margin-right:4px;"></i>
+            Items pending cleanup
+        </div>
+    </div>
+
+    <!-- ── Info Banner ── -->
+    <div th:if="${(files != null and !files.isEmpty()) or (folders != null and !folders.isEmpty())}"
+         class="cn-alert warning" style="margin-bottom:var(--space-5);">
+        <i data-lucide="info" class="cn-alert-icon" style="width:16px;height:16px;"></i>
+        <div class="cn-alert-content">
+            <div class="cn-alert-message">
+                Items in the Recycle Bin are removed from active storage nodes but not yet purged from disk.
+                Permanent deletion is irreversible.
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Deleted Folders Section ── -->
+    <div th:if="${folders != null and !folders.isEmpty()}" style="margin-bottom:var(--space-6);">
+        <div class="cn-section-label cn-reveal">
+            <i data-lucide="folder-x" style="width:12px;height:12px;display:inline;"></i>
+            Deleted Folders
+        </div>
+        <div class="cn-folder-grid cn-stagger">
+            <div th:each="folder : ${folders}"
+                 style="background:var(--bg-card);border:1px dashed rgba(239,68,68,0.25);border-radius:var(--radius-lg);padding:var(--space-4);position:relative;opacity:0.8;transition:var(--transition-base);"
+                 onmouseover="this.style.opacity='1';" onmouseout="this.style.opacity='0.8';">
+                <div style="font-size:28px;margin-bottom:var(--space-2);filter:grayscale(0.7);">
+                    <i data-lucide="folder-x" style="width:28px;height:28px;color:var(--danger);opacity:0.6;"></i>
+                </div>
+                <div class="cn-truncate" style="font-size:var(--text-sm);font-weight:var(--fw-semibold);color:var(--text-muted);text-decoration:line-through;"
+                     th:text="${folder.name}">Folder</div>
+                <div style="font-size:var(--text-xs);color:var(--text-disabled);margin-top:2px;">
+                    <span th:text="${folder.fileCount}">0</span> files ·
+                    <span th:text="${folder.subFolderCount}">0</span> folders
+                </div>
+
+                <!-- Actions -->
+                <div style="display:flex;gap:var(--space-2);margin-top:var(--space-3);">
+                    <form th:action="@{/trash/restore/folder/{id}(id=${folder.id})}" method="post" style="margin:0;flex:1;">
+                        <button type="submit" class="cn-btn cn-btn-success cn-btn-sm" style="width:100%;" title="Restore folder">
+                            <i data-lucide="rotate-ccw" style="width:12px;height:12px;"></i>
+                            Restore
+                        </button>
+                    </form>
+                    <form th:action="@{/trash/delete/folder/{id}(id=${folder.id})}" method="post" style="margin:0;"
+                          onsubmit="return confirm('PERMANENT DELETE: This folder and ALL its contents will be removed from all nodes forever. Continue?')">
+                        <button type="submit" class="cn-btn cn-btn-danger cn-btn-sm" title="Permanently delete">
+                            <i data-lucide="x-circle" style="width:12px;height:12px;"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Deleted Files Section ── -->
+    <div class="cn-reveal">
+        <div th:if="${files != null and !files.isEmpty()}">
+            <div class="cn-section-label">
+                <i data-lucide="file-x" style="width:12px;height:12px;display:inline;"></i>
+                Deleted Files
+            </div>
+            <div class="cn-card">
+                <div class="cn-table-wrapper">
+                    <table class="cn-table">
+                        <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Deleted</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody class="cn-stagger">
+                        <tr th:each="file : ${files}" style="opacity:0.75;">
+                            <td>
+                                <div class="cn-flex cn-items-center cn-gap-2">
+                                    <i data-lucide="file-x" style="width:14px;height:14px;color:var(--danger);opacity:0.5;flex-shrink:0;"></i>
+                                    <span class="cn-truncate" style="max-width:220px;color:var(--text-muted);text-decoration:line-through;"
+                                          th:text="${file.originalName}">file.txt</span>
+                                    <span th:if="${file.folderName != null}"
+                                          style="font-size:var(--text-xs);color:var(--text-disabled);display:flex;align-items:center;gap:3px;">
+                                        <i data-lucide="folder" style="width:10px;height:10px;"></i>
+                                        <span th:text="${file.folderName}">folder</span>
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <span style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--text-muted);"
+                                      th:text="${file.formattedSize}">0 B</span>
+                            </td>
+                            <td>
+                                <span class="cn-badge idle" style="font-size:10px;opacity:0.6;"
+                                      th:text="${file.fileType}">type</span>
+                            </td>
+                            <td>
+                                <span style="font-size:var(--text-xs);color:var(--text-muted);"
+                                      th:text="${#temporals.format(file.uploadedAt, 'MMM dd, HH:mm')}">Jan 01</span>
+                            </td>
+                            <td style="text-align:right;">
+                                <div class="cn-flex cn-justify-end cn-gap-2">
+                                    <form th:action="@{/trash/restore/file/{id}(id=${file.id})}" method="post" style="margin:0;">
+                                        <button type="submit" class="cn-btn cn-btn-success cn-btn-sm" title="Restore file">
+                                            <i data-lucide="rotate-ccw" style="width:12px;height:12px;"></i>
+                                            Restore
+                                        </button>
+                                    </form>
+                                    <form th:action="@{/trash/delete/file/{id}(id=${file.id})}" method="post" style="margin:0;"
+                                          onsubmit="return confirm('PERMANENT DELETE: This file cannot be recovered. Continue?')">
+                                        <button type="submit" class="cn-btn cn-btn-danger cn-btn-sm" title="Permanently delete">
+                                            <i data-lucide="x-circle" style="width:12px;height:12px;"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div th:if="${(files == null or files.isEmpty()) and (folders == null or folders.isEmpty())}"
+             class="cn-card">
+            <div class="cn-empty-state">
+                <div class="cn-empty-icon cn-anim-float-subtle" style="background:var(--success-bg);">
+                    <i data-lucide="trash-2" style="width:28px;height:28px;color:var(--success);"></i>
+                </div>
+                <div class="cn-empty-title" style="color:var(--success);">Recycle Bin is Clear</div>
+                <div class="cn-empty-description">No deleted files or folders. Your distributed storage is clean.</div>
+                <a href="/files" class="cn-btn cn-btn-secondary" style="margin-top:var(--space-4);">
+                    <i data-lucide="arrow-left" style="width:15px;height:15px;"></i>
+                    Back to Explorer
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /.cn-workspace -->
+
+<!-- ═══════════════════════ APP SHELL END ═══════════════════════ -->
+<div th:replace="~{fragments/header :: appShellEnd}"></div>
+
+</body>
+</html>

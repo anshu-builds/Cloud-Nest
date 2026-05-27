@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CloudNest Command Center — Distributed Cloud Infrastructure Platform overview">
+    <title>CloudNest — Command Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link th:href="@{/css/design-system.css}" rel="stylesheet">
+    <link th:href="@{/css/animations.css}" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@0.325.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <!-- Chart.js for analytics charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════ APP SHELL START ═══════════════════════ -->
+<div th:replace="~{fragments/header :: appShellStart}"></div>
+
+<!-- ═══════════════════════ PAGE WORKSPACE ═══════════════════════ -->
+<div class="cn-workspace">
+
+    <!-- Thymeleaf alert messages (converted to cn-alert) -->
+    <div th:if="${success}" class="cn-alert success cn-reveal" id="dashSuccessAlert">
+        <i data-lucide="check-circle" class="cn-alert-icon" style="width:16px;height:16px;"></i>
+        <div class="cn-alert-content">
+            <div class="cn-alert-title">Success</div>
+            <div class="cn-alert-message" th:text="${success}"></div>
+        </div>
+        <button class="cn-alert-close" onclick="this.closest('.cn-alert').remove()">✕</button>
+    </div>
+    <div th:if="${error}" class="cn-alert error cn-reveal" id="dashErrorAlert">
+        <i data-lucide="alert-circle" class="cn-alert-icon" style="width:16px;height:16px;"></i>
+        <div class="cn-alert-content">
+            <div class="cn-alert-title">Error</div>
+            <div class="cn-alert-message" th:text="${error}"></div>
+        </div>
+        <button class="cn-alert-close" onclick="this.closest('.cn-alert').remove()">✕</button>
+    </div>
+
+    <!-- ── Three-Column Layout ── -->
+    <div class="cn-three-col">
+
+        <!-- ══════════════ MAIN CENTER COLUMN ══════════════ -->
+        <div>
+
+            <!-- ── Section: Welcome Header ── -->
+            <div class="cn-flex cn-justify-between cn-items-center cn-mb-6 cn-reveal">
+                <div>
+                    <h1 style="font-size:var(--text-2xl);font-weight:var(--fw-bold);letter-spacing:-0.03em;color:var(--text-primary);margin-bottom:4px;">
+                        Command Center
+                    </h1>
+                    <p style="font-size:var(--text-sm);color:var(--text-muted);">
+                        Welcome back, <strong sec:authentication="name" style="color:var(--text-secondary);"></strong> — Infrastructure overview
+                    </p>
+                </div>
+                <div class="cn-flex cn-gap-3">
+                    <a href="/files" class="cn-btn cn-btn-secondary cn-btn-sm">
+                        <i data-lucide="folder-open" style="width:14px;height:14px;"></i>
+                        Explorer
+                    </a>
+                    <button class="cn-btn cn-btn-primary cn-btn-sm" onclick="openModal('uploadModalOverlay')">
+                        <i data-lucide="upload-cloud" style="width:14px;height:14px;"></i>
+                        Upload
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── Section: Metric Cards ── -->
+            <div class="cn-metrics-grid cn-stagger">
+
+                <!-- Total Files -->
+                <div class="cn-metric-card cn-reveal">
+                    <div class="cn-metric-card-glow" style="background:var(--blue-500);"></div>
+                    <div class="cn-metric-icon blue">
+                        <i data-lucide="files" style="width:17px;height:17px;"></i>
+                    </div>
+                    <div class="cn-metric-value"
+                         data-counter th:attr="data-counter=${dashboard.totalFiles}">
+                        <span th:text="${dashboard.totalFiles}">0</span>
+                    </div>
+                    <div class="cn-metric-label">Total Files</div>
+                    <div class="cn-metric-trend up">
+                        <i data-lucide="trending-up" style="width:12px;height:12px;"></i>
+                        Distributed across nodes
+                    </div>
+                </div>
+
+                <!-- Storage Used -->
+                <div class="cn-metric-card cn-reveal cn-delay-100">
+                    <div class="cn-metric-card-glow" style="background:var(--purple-500);"></div>
+                    <div class="cn-metric-icon purple">
+                        <i data-lucide="hard-drive" style="width:17px;height:17px;"></i>
+                    </div>
+                    <div class="cn-metric-value" th:text="${dashboard.formattedStorage}">0 B</div>
+                    <div class="cn-metric-label">Storage Used</div>
+                    <div class="cn-metric-trend neutral">
+                        <i data-lucide="database" style="width:12px;height:12px;"></i>
+                        <span th:text="${dashboard.quotaPercentage} + '% of ' + ${dashboard.formattedQuota}"></span>
+                    </div>
+                </div>
+
+                <!-- Total Folders -->
+                <div class="cn-metric-card cn-reveal cn-delay-200">
+                    <div class="cn-metric-card-glow" style="background:var(--success);"></div>
+                    <div class="cn-metric-icon green">
+                        <i data-lucide="folder" style="width:17px;height:17px;"></i>
+                    </div>
+                    <div class="cn-metric-value"
+                         data-counter th:attr="data-counter=${dashboard.totalFolders}">
+                        <span th:text="${dashboard.totalFolders}">0</span>
+                    </div>
+                    <div class="cn-metric-label">Folders</div>
+                    <div class="cn-metric-trend up">
+                        <i data-lucide="layers" style="width:12px;height:12px;"></i>
+                        Hierarchical structure
+                    </div>
+                </div>
+
+                <!-- Active Nodes (simulated) -->
+                <div class="cn-metric-card cn-reveal cn-delay-300">
+                    <div class="cn-metric-card-glow" style="background:var(--cyan-500);"></div>
+                    <div class="cn-metric-icon cyan">
+                        <i data-lucide="server" style="width:17px;height:17px;"></i>
+                    </div>
+                    <div class="cn-metric-value">3<span style="font-size:var(--text-lg);color:var(--text-muted);font-weight:500;">/3</span></div>
+                    <div class="cn-metric-label">Active Nodes</div>
+                    <div class="cn-metric-trend up">
+                        <div class="cn-live-dot" style="display:inline-flex;">
+                            <div class="cn-live-dot-inner" style="width:6px;height:6px;"></div>
+                        </div>
+                        All nodes healthy
+                    </div>
+                </div>
+
+                <!-- Dedup Savings (simulated) -->
+                <div class="cn-metric-card cn-reveal cn-delay-400">
+                    <div class="cn-metric-card-glow" style="background:var(--warning);"></div>
+                    <div class="cn-metric-icon yellow">
+                        <i data-lucide="fingerprint" style="width:17px;height:17px;"></i>
+                    </div>
+                    <div class="cn-metric-value">23<span style="font-size:var(--text-lg);color:var(--success);font-weight:600;">%</span></div>
+                    <div class="cn-metric-label">Dedup Savings</div>
+                    <div class="cn-metric-trend up">
+                        <i data-lucide="zap" style="width:12px;height:12px;"></i>
+                        SHA-256 engine active
+                    </div>
+                </div>
+
+                <!-- Replication Rate (simulated) -->
+                <div class="cn-metric-card cn-reveal cn-delay-500">
+                    <div class="cn-metric-card-glow" style="background:var(--success);"></div>
+                    <div class="cn-metric-icon green">
+                        <i data-lucide="git-branch" style="width:17px;height:17px;"></i>
+                    </div>
+                    <div class="cn-metric-value">99.7<span style="font-size:var(--text-base);color:var(--text-muted);font-weight:500;">%</span></div>
+                    <div class="cn-metric-label">Replication Rate</div>
+                    <div class="cn-metric-trend up">
+                        <i data-lucide="check-circle" style="width:12px;height:12px;"></i>
+                        Cross-node sync
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ── Section: Charts Row ── -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-bottom:var(--space-6);">
+
+                <!-- Node Distribution Chart -->
+                <div class="cn-card cn-reveal">
+                    <div class="cn-card-header">
+                        <div class="cn-card-title">
+                            <i data-lucide="server" style="width:14px;height:14px;color:var(--blue-400);"></i>
+                            Node Distribution
+                        </div>
+                        <a href="/nodes" class="cn-btn cn-btn-ghost cn-btn-sm" style="font-size:var(--text-xs);">
+                            View Topology <i data-lucide="arrow-right" style="width:12px;height:12px;"></i>
+                        </a>
+                    </div>
+                    <div class="cn-card-body">
+                        <div th:if="${dashboard.nodeDistribution != null and !dashboard.nodeDistribution.isEmpty()}">
+                            <div th:each="entry : ${dashboard.nodeDistribution}" style="margin-bottom:var(--space-4);">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-2);">
+                                    <div style="display:flex;align-items:center;gap:var(--space-2);">
+                                        <span class="cn-badge node" th:text="${entry.key}">node1</span>
+                                    </div>
+                                    <span style="font-size:var(--text-xs);color:var(--text-muted);font-family:var(--font-mono);"
+                                          th:text="${entry.value} + ' files'">0 files</span>
+                                </div>
+                                <div class="cn-progress">
+                                    <div class="cn-progress-bar"
+                                         th:style="'width: ' + ${dashboard.totalFiles > 0 ? (entry.value * 100 / dashboard.totalFiles) : 0} + '%'">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${dashboard.nodeDistribution == null or dashboard.nodeDistribution.isEmpty()}"
+                             class="cn-empty-state" style="padding:var(--space-8) var(--space-4);">
+                            <div class="cn-empty-icon" style="width:48px;height:48px;font-size:20px;">
+                                <i data-lucide="server" style="width:20px;height:20px;"></i>
+                            </div>
+                            <div class="cn-empty-title" style="font-size:var(--text-sm);">No node data</div>
+                            <div class="cn-empty-description" style="font-size:var(--text-xs);">Upload files to populate node distribution</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Type Distribution -->
+                <div class="cn-card cn-reveal cn-delay-200">
+                    <div class="cn-card-header">
+                        <div class="cn-card-title">
+                            <i data-lucide="pie-chart" style="width:14px;height:14px;color:var(--purple-400);"></i>
+                            File Types
+                        </div>
+                    </div>
+                    <div class="cn-card-body">
+                        <div th:if="${dashboard.fileTypeDistribution != null and !dashboard.fileTypeDistribution.isEmpty()}">
+                            <div th:each="entry,iter : ${dashboard.fileTypeDistribution}"
+                                 style="display:flex;justify-content:space-between;align-items:center;padding:var(--space-2) 0;border-bottom:1px solid var(--border-subtle);"
+                                 th:classappend="${iter.last} ? '' : ''">
+                                <div class="cn-flex cn-items-center cn-gap-2">
+                                    <div style="width:8px;height:8px;border-radius:50%;background:var(--gradient-primary);flex-shrink:0;"></div>
+                                    <span style="font-size:var(--text-sm);color:var(--text-secondary);" th:text="${entry.key}">Type</span>
+                                </div>
+                                <span style="font-size:var(--text-md);font-weight:var(--fw-bold);color:var(--text-primary);font-family:var(--font-mono);"
+                                      th:text="${entry.value}">0</span>
+                            </div>
+                        </div>
+                        <div th:if="${dashboard.fileTypeDistribution == null or dashboard.fileTypeDistribution.isEmpty()}"
+                             class="cn-empty-state" style="padding:var(--space-8) var(--space-4);">
+                            <div class="cn-empty-icon" style="width:48px;height:48px;font-size:20px;">
+                                <i data-lucide="file" style="width:20px;height:20px;"></i>
+                            </div>
+                            <div class="cn-empty-title" style="font-size:var(--text-sm);">No files yet</div>
+                            <div class="cn-empty-description" style="font-size:var(--text-xs);">Upload files to see type distribution</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ── Section: Storage Quota Bar ── -->
+            <div class="cn-card cn-reveal cn-mb-6">
+                <div class="cn-card-header">
+                    <div class="cn-card-title">
+                        <i data-lucide="hard-drive" style="width:14px;height:14px;color:var(--blue-400);"></i>
+                        Storage Quota
+                    </div>
+                    <span style="font-size:var(--text-xs);color:var(--text-muted);"
+                          th:text="${dashboard.formattedStorage} + ' used of ' + ${dashboard.formattedQuota}">
+                        0 B used of 1 GB
+                    </span>
+                </div>
+                <div class="cn-card-body">
+                    <div class="cn-progress" style="height:10px;">
+                        <div class="cn-progress-bar"
+                             th:style="'width: ' + ${dashboard.quotaPercentage} + '%'"
+                             th:classappend="${dashboard.quotaPercentage > 95} ? 'danger' : (${dashboard.quotaPercentage > 80} ? 'warning' : '')">
+                        </div>
+                    </div>
+                    <div class="cn-flex cn-justify-between" style="margin-top:var(--space-2);">
+                        <span style="font-size:var(--text-xs);color:var(--text-muted);">
+                            <span th:text="${dashboard.quotaPercentage}">0</span>% utilized
+                        </span>
+                        <span style="font-size:var(--text-xs);color:var(--text-muted);"
+                              th:text="${100 - dashboard.quotaPercentage} + '% remaining'">100% remaining</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Section: Recent Uploads ── -->
+            <div class="cn-card cn-reveal">
+                <div class="cn-card-header">
+                    <div class="cn-card-title">
+                        <i data-lucide="clock" style="width:14px;height:14px;color:var(--blue-400);"></i>
+                        Recent Uploads
+                    </div>
+                    <a href="/files" class="cn-btn cn-btn-ghost cn-btn-sm" style="font-size:var(--text-xs);">
+                        View all <i data-lucide="arrow-right" style="width:12px;height:12px;"></i>
+                    </a>
+                </div>
+
+                <div th:if="${dashboard.recentFiles != null and !dashboard.recentFiles.isEmpty()}"
+                     class="cn-table-wrapper">
+                    <table class="cn-table">
+                        <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>Size</th>
+                            <th>Node</th>
+                            <th>Uploaded</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="file : ${dashboard.recentFiles}">
+                            <td class="primary">
+                                <div class="cn-flex cn-items-center cn-gap-2">
+                                    <i data-lucide="file" class="cn-file-icon" style="width:14px;height:14px;flex-shrink:0;"></i>
+                                    <span th:text="${file.originalName}" class="cn-truncate" style="max-width:200px;"></span>
+                                </div>
+                            </td>
+                            <td>
+                                <span style="font-family:var(--font-mono);font-size:var(--text-xs);"
+                                      th:text="${file.formattedSize}">0 B</span>
+                            </td>
+                            <td>
+                                <span class="cn-badge node" th:text="${file.storageNode}">node1</span>
+                            </td>
+                            <td>
+                                <span style="font-size:var(--text-xs);color:var(--text-muted);"
+                                      th:text="${#temporals.format(file.uploadedAt, 'MMM dd, HH:mm')}">Jan 01</span>
+                            </td>
+                            <td style="text-align:right;">
+                                <div class="cn-flex cn-justify-end cn-gap-2">
+                                    <a th:if="${file.fileType != null and (file.fileType.startsWith('image/') or file.fileType.startsWith('video/') or file.fileType.startsWith('audio/') or file.fileType.startsWith('text/') or file.fileType == 'application/pdf')}"
+                                       th:href="@{/files/preview/{id}(id=${file.id})}" target="_blank"
+                                       class="cn-btn cn-btn-icon cn-btn-sm" title="Preview">
+                                        <i data-lucide="eye" style="width:13px;height:13px;"></i>
+                                    </a>
+                                    <a th:href="@{/files/download/{id}(id=${file.id})}"
+                                       class="cn-btn cn-btn-icon cn-btn-sm" title="Download">
+                                        <i data-lucide="download" style="width:13px;height:13px;"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div th:if="${dashboard.recentFiles == null or dashboard.recentFiles.isEmpty()}"
+                     class="cn-empty-state">
+                    <div class="cn-empty-icon">
+                        <i data-lucide="upload-cloud" style="width:28px;height:28px;"></i>
+                    </div>
+                    <div class="cn-empty-title">No files yet</div>
+                    <div class="cn-empty-description">Upload your first file to get started with distributed storage</div>
+                    <button class="cn-btn cn-btn-primary" style="margin-top:var(--space-4);"
+                            onclick="openModal('uploadModalOverlay')">
+                        <i data-lucide="upload-cloud" style="width:15px;height:15px;"></i>
+                        Upload File
+                    </button>
+                </div>
+            </div>
+
+        </div><!-- /.main-center -->
+
+        <!-- ══════════════ RIGHT INSIGHTS PANEL ══════════════ -->
+        <div class="cn-insights-panel">
+
+            <!-- System Status -->
+            <div class="cn-insight-card">
+                <div class="cn-insight-title">Infrastructure Status</div>
+                <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <span style="font-size:var(--text-xs);color:var(--text-secondary);">Node Alpha</span>
+                        <span class="cn-badge online">
+                            <span class="cn-status-dot"></span>Online
+                        </span>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <span style="font-size:var(--text-xs);color:var(--text-secondary);">Node Beta</span>
+                        <span class="cn-badge online">
+                            <span class="cn-status-dot"></span>Online
+                        </span>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <span style="font-size:var(--text-xs);color:var(--text-secondary);">Node Gamma</span>
+                        <span class="cn-badge online">
+                            <span class="cn-status-dot"></span>Online
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="cn-insight-card">
+                <div class="cn-insight-title">Quick Actions</div>
+                <div style="display:flex;flex-direction:column;gap:2px;">
+                    <button class="cn-quick-action" onclick="openModal('uploadModalOverlay')">
+                        <div class="cn-quick-action-icon">
+                            <i data-lucide="upload-cloud" style="width:13px;height:13px;"></i>
+                        </div>
+                        Upload File
+                    </button>
+                    <a href="/files" class="cn-quick-action">
+                        <div class="cn-quick-action-icon">
+                            <i data-lucide="folder-open" style="width:13px;height:13px;"></i>
+                        </div>
+                        Browse Files
+                    </a>
+                    <a href="/nodes" class="cn-quick-action">
+                        <div class="cn-quick-action-icon">
+                            <i data-lucide="server" style="width:13px;height:13px;"></i>
+                        </div>
+                        View Topology
+                    </a>
+                    <a href="/deduplication" class="cn-quick-action">
+                        <div class="cn-quick-action-icon">
+                            <i data-lucide="fingerprint" style="width:13px;height:13px;"></i>
+                        </div>
+                        Deduplication
+                    </a>
+                </div>
+            </div>
+
+            <!-- Platform Info -->
+            <div class="cn-insight-card">
+                <div class="cn-insight-title">Platform</div>
+                <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+                    <div>
+                        <div style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:2px;">Algorithm</div>
+                        <div style="font-size:var(--text-xs);font-family:var(--font-mono);color:var(--blue-400);">SHA-256 Deduplication</div>
+                    </div>
+                    <div>
+                        <div style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:2px;">Architecture</div>
+                        <div style="font-size:var(--text-xs);font-family:var(--font-mono);color:var(--purple-400);">Distributed Multi-Node</div>
+                    </div>
+                    <div>
+                        <div style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:2px;">Version</div>
+                        <div style="font-size:var(--text-xs);font-family:var(--font-mono);color:var(--text-secondary);">CloudNest v2.0</div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /.cn-insights-panel -->
+
+    </div><!-- /.cn-three-col -->
+
+</div><!-- /.cn-workspace -->
+
+<!-- ═══════════════ UPLOAD MODAL ═══════════════ -->
+<div class="cn-modal-overlay" id="uploadModalOverlay">
+    <div class="cn-modal">
+        <div class="cn-modal-header">
+            <div class="cn-modal-title">
+                <i data-lucide="upload-cloud" style="width:16px;height:16px;color:var(--blue-400);"></i>
+                Upload to Infrastructure
+            </div>
+            <button class="cn-modal-close" onclick="closeModal('uploadModalOverlay')" aria-label="Close">✕</button>
+        </div>
+        <form th:action="@{/files/upload}" method="post" enctype="multipart/form-data">
+            <div class="cn-modal-body">
+                <!-- Drop zone -->
+                <div class="cn-dropzone" id="uploadZone">
+                    <div class="cn-dropzone-icon">
+                        <i data-lucide="upload-cloud" style="width:24px;height:24px;"></i>
+                    </div>
+                    <div class="cn-dropzone-title">Drop files here</div>
+                    <div class="cn-dropzone-subtitle">or <label for="fileInput" style="color:var(--blue-400);cursor:pointer;font-weight:var(--fw-semibold);">browse from disk</label></div>
+                    <div class="cn-dropzone-sub">Max 50 MB · SHA-256 deduplication applied automatically</div>
+                    <input type="file" id="fileInput" name="files" multiple required style="display:none;">
+                    <p id="selectedFileName" style="margin-top:var(--space-3);font-size:var(--text-sm);color:var(--blue-400);font-weight:var(--fw-semibold);"></p>
+                </div>
+
+                <!-- Folder selector -->
+                <div class="cn-form-group" style="margin-top:var(--space-4);">
+                    <label class="cn-label">
+                        <i data-lucide="folder" style="width:12px;height:12px;display:inline;"></i>
+                        Upload to Folder
+                    </label>
+                    <select name="folderId" class="cn-select">
+                        <option value="">Root (No folder)</option>
+                        <option th:each="folder : ${allFolders}"
+                                th:value="${folder.id}"
+                                th:text="${folder.name}"
+                                th:selected="${folder.id == currentFolderId}">Folder</option>
+                    </select>
+                </div>
+            </div>
+            <div class="cn-modal-footer">
+                <button type="button" class="cn-btn cn-btn-secondary" onclick="closeModal('uploadModalOverlay')">Cancel</button>
+                <button type="submit" class="cn-btn cn-btn-primary">
+                    <i data-lucide="upload-cloud" style="width:14px;height:14px;"></i>
+                    Upload to Node
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ═══════════════════════ APP SHELL END ═══════════════════════ -->
+<div th:replace="~{fragments/header :: appShellEnd}"></div>
+
+</body>
+</html>

@@ -1,0 +1,8 @@
+/*
+ * CloudNest frontend entry point.
+ * The Bootstrap-era stylesheet has been replaced by the custom enterprise
+ * design system. This file remains as a compatibility shim for any stale
+ * links, cached pages, or external references that still request style.css.
+ */
+@import url("./design-system.css");
+@import url("./animations.css");

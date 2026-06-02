@@ -5,6 +5,9 @@
 # Environment secrets — NEVER commit
 .env
 
+# Documentation (local only)
+Doc/
+
 # Maven build output
 target/
 

@@ -235,6 +235,7 @@ public class FolderService {
 
         // Add files
         for (FileEntity fileEntity : folder.getFiles()) {
+            if (fileEntity.isDeleted()) continue;
             String filePath = storageNodeService.getFilePath(fileEntity.getStorageNode(), fileEntity.getStoredName());
             Path path = Paths.get(filePath);
 
@@ -250,6 +251,7 @@ public class FolderService {
 
         // Recursively add sub-folders
         for (Folder subFolder : folder.getSubFolders()) {
+            if (subFolder.isDeleted()) continue;
             zipFolder(subFolder, newPath, zos);
         }
     }
@@ -266,7 +268,7 @@ public class FolderService {
     }
 
     public List<FolderDto> getAllFolders(User user) {
-        return folderRepository.findByUserAndParentIsNullAndIsDeletedFalseOrderByNameAsc(user)
+        return folderRepository.findByUserAndIsDeletedFalseOrderByNameAsc(user)
                 .stream().map(this::convertToDto).collect(Collectors.toList());
     }
 

@@ -131,17 +131,17 @@ public class DashboardController {
         model.addAttribute("user", user);
         model.addAttribute("activePage", "nodes");
         
-        List<com.cloudnest.entity.FileEntity> allFiles = fileRepository.findAll();
-        
         long node1Bytes = 0, node2Bytes = 0, node3Bytes = 0;
         long node1Count = 0, node2Count = 0, node3Count = 0;
         
-        for (com.cloudnest.entity.FileEntity f : allFiles) {
-            if (f.isDeleted()) continue;
-            long size = f.getFileSize() != null ? f.getFileSize() : 0;
-            if ("node1".equals(f.getStorageNode())) { node1Bytes += size; node1Count++; }
-            else if ("node2".equals(f.getStorageNode())) { node2Bytes += size; node2Count++; }
-            else if ("node3".equals(f.getStorageNode())) { node3Bytes += size; node3Count++; }
+        for (Object[] row : fileRepository.getNodeStats()) {
+            String node = (String) row[0];
+            long count = (Long) row[1];
+            long size = (Long) row[2];
+            
+            if ("node1".equals(node)) { node1Bytes = size; node1Count = count; }
+            else if ("node2".equals(node)) { node2Bytes = size; node2Count = count; }
+            else if ("node3".equals(node)) { node3Bytes = size; node3Count = count; }
         }
         
         // Calculate per-node capacity based on total quota
@@ -226,13 +226,8 @@ public class DashboardController {
         model.addAttribute("memoryStrokeOffset", (int) (252 - (252 * memoryHealth / 100.0)));
         
         // Deduplication Stats
-        List<com.cloudnest.entity.FileEntity> allFiles = fileRepository.findAll();
-        long totalFiles = allFiles.size();
-        long uniqueHashes = allFiles.stream()
-            .map(f -> f.getFileHash() != null ? f.getFileHash() : "")
-            .filter(h -> !h.isEmpty())
-            .distinct()
-            .count();
+        long totalFiles = fileRepository.countActiveFiles();
+        long uniqueHashes = fileRepository.countUniqueHashes();
         
         long dedupSaved = totalFiles > 0 ? (totalFiles - uniqueHashes) : 0;
         if (dedupSaved < 0) dedupSaved = 0;

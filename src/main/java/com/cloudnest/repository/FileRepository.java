@@ -73,6 +73,19 @@ public interface FileRepository extends JpaRepository<FileEntity, Long> {
     // For Trash auto-purge scheduler — uses deletedAt (when file was actually trashed)
     List<FileEntity> findByIsDeletedTrueAndDeletedAtBefore(java.time.LocalDateTime cutoff);
 
+    // Admin / Global statistics queries
+    @Query("SELECT COUNT(f) FROM FileEntity f WHERE f.isDeleted = false")
+    long countActiveFiles();
+
+    @Query("SELECT COALESCE(SUM(f.fileSize), 0) FROM FileEntity f WHERE f.isDeleted = false")
+    long sumTotalFileSize();
+
+    @Query("SELECT f.storageNode, COUNT(f), COALESCE(SUM(f.fileSize), 0) FROM FileEntity f WHERE f.isDeleted = false GROUP BY f.storageNode")
+    List<Object[]> getNodeStats();
+
+    @Query("SELECT COUNT(DISTINCT f.fileHash) FROM FileEntity f WHERE f.isDeleted = false")
+    long countUniqueHashes();
+
     // Legacy: kept for backward compatibility (queries by upload date, not deletion date)
     @Deprecated
     List<FileEntity> findByIsDeletedTrueAndUploadedAtBefore(java.time.LocalDateTime cutoff);

@@ -10,7 +10,7 @@
 | `config/AppConfig.java` | Creates storage/node1-3 directories on startup |
 | **Security** | |
 | `security/SecurityConfig.java` | Session-based auth, BCrypt, login/logout rules |
-| **Entities (JPA → MySQL)** | |
+| **Entities (JPA → PostgreSQL)** | |
 | `entity/User.java` | Users table — username, email, hashed password |
 | `entity/FileEntity.java` | Files table — name, size, type, storage node |
 | `entity/Folder.java` | Folders table — self-referencing hierarchy |
@@ -66,7 +66,7 @@
 ```sql
 CREATE DATABASE cloudnest_db;
 ```
-Update `application.properties` if your MySQL password differs from `root`.
+Update `application.properties` if your PostgreSQL password differs from `root`.
 
 ### 2. Run in IntelliJ IDEA
 1. **File → Open** → select project folder
@@ -85,7 +85,7 @@ Update `application.properties` if your MySQL password differs from `root`.
 ## 🏗️ How Each Layer Works
 
 ```
-Browser → Controller → Service → Repository → MySQL
+Browser → Controller → Service → Repository → PostgreSQL
                 ↓
            Thymeleaf
            Templates

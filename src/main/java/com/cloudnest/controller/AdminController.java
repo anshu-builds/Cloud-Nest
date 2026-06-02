@@ -46,18 +46,18 @@ public class AdminController {
     public String showAdminDashboard(Model model, Principal principal) {
         // System metrics
         long totalUsers = userRepository.count();
-        long totalFiles = fileRepository.count();
-
-        List<FileEntity> allFiles = fileRepository.findAll();
-        long totalStorageBytes = allFiles.stream()
-                .filter(f -> !f.isDeleted())
-                .mapToLong(f -> f.getFileSize() != null ? f.getFileSize() : 0L)
-                .sum();
+        long totalFiles = fileRepository.countActiveFiles();
+        long totalStorageBytes = fileRepository.sumTotalFileSize();
 
         // Node metrics distribution
-        long node1Count = allFiles.stream().filter(f -> "node1".equals(f.getStorageNode()) && !f.isDeleted()).count();
-        long node2Count = allFiles.stream().filter(f -> "node2".equals(f.getStorageNode()) && !f.isDeleted()).count();
-        long node3Count = allFiles.stream().filter(f -> "node3".equals(f.getStorageNode()) && !f.isDeleted()).count();
+        long node1Count = 0, node2Count = 0, node3Count = 0;
+        for (Object[] row : fileRepository.getNodeStats()) {
+            String node = (String) row[0];
+            long count = (Long) row[1];
+            if ("node1".equals(node)) node1Count = count;
+            else if ("node2".equals(node)) node2Count = count;
+            else if ("node3".equals(node)) node3Count = count;
+        }
 
         model.addAttribute("totalUsers", totalUsers);
         model.addAttribute("totalFiles", totalFiles);
@@ -69,6 +69,7 @@ public class AdminController {
 
         // Fetch lists for administration tables
         List<User> usersList = userRepository.findAll();
+        List<FileEntity> allFiles = fileRepository.findAll();
         model.addAttribute("users", usersList);
         model.addAttribute("files", allFiles);
         

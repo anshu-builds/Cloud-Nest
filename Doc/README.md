@@ -1,6 +1,6 @@
 # ☁️ CloudNest — Mini Google Drive Clone
 
-A simplified **distributed cloud file storage system** built with Java 21, Spring Boot, and MySQL. Designed as a university Masters-level project that demonstrates enterprise architecture patterns while remaining beginner-friendly.
+A simplified **distributed cloud file storage system** built with Java 21, Spring Boot, and PostgreSQL. Designed as a university Masters-level project that demonstrates enterprise architecture patterns while remaining beginner-friendly.
 
 ---
 
@@ -23,9 +23,9 @@ A simplified **distributed cloud file storage system** built with Java 21, Sprin
 | Language     | Java 21                      |
 | Framework    | Spring Boot 3.4.5            |
 | Security     | Spring Security (Sessions)   |
-| Database     | MySQL + Spring Data JPA      |
+| Database     | PostgreSQL + Spring Data JPA |
 | Templates    | Thymeleaf                    |
-| Frontend     | Bootstrap 5.3 + Custom CSS   |
+| Frontend     | Lucide, Three.js, Custom CSS |
 | Build Tool   | Maven                        |
 | Code Gen     | Lombok                       |
 
@@ -51,17 +51,17 @@ com.cloudnest/
 
 ### Step 1: Prerequisites
 - **Java 21** (JDK) — [Download](https://adoptium.net/)
-- **MySQL 8.0+** — [Download](https://dev.mysql.com/downloads/)
+- **PostgreSQL 12+** — [Download](https://www.postgresql.org/download/)
 - **IntelliJ IDEA** (Community or Ultimate)
 - **Maven** (bundled with IntelliJ)
 
 ### Step 2: Database Setup
-1. Open MySQL Workbench or terminal
+1. Open pgAdmin or psql terminal
 2. Run:
    ```sql
    CREATE DATABASE cloudnest_db;
    ```
-3. Update `src/main/resources/application.properties` if your MySQL credentials differ:
+3. Update `src/main/resources/application.properties` if your PostgreSQL credentials differ:
    ```properties
    spring.datasource.username=root
    spring.datasource.password=root

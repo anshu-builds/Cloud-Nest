@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="CloudNest — Create your distributed infrastructure account">
+    <!-- Session is forced in AuthController to prevent buffer flush issues -->
     <title>CloudNest — Create Account</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,7 +12,7 @@
     <link th:href="@{/css/design-system.css}" rel="stylesheet">
     <link th:href="@{/css/animations.css}" rel="stylesheet">
     <script src="https://unpkg.com/lucide@0.325.0/dist/umd/lucide.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
     <style>
@@ -40,13 +41,17 @@
     </style>
 </head>
 <body class="cn-auth-body">
+<!-- Dummy form to force early CSRF token/session creation before Tomcat buffer flushes -->
+<form th:action="@{/login}" method="post" style="display:none;"></form>
 
 <!-- ══════════════════════════════════════════════════════
      LEFT PANEL — Hero
      ══════════════════════════════════════════════════════ -->
 <div class="cn-auth-left" style="min-height:100vh;flex:1.4;position:relative;">
     <canvas id="heroCanvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;"></canvas>
-    <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(8,14,28,0.2) 0%,rgba(8,14,28,0.5) 100%);z-index:1;pointer-events:none;"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(8,14,28,0.2) 0%,rgba(8,14,28,0.45) 100%);z-index:1;pointer-events:none;"></div>
+    <!-- Scanline depth -->
+    <div class="cn-scanlines"></div>
 
     <!-- Logo -->
     <div class="cn-auth-logo-area cn-anim-fade-in">
@@ -61,11 +66,11 @@
     </div>
 
     <!-- Hero Content -->
-    <div class="cn-auth-left-content" style="padding:3rem;position:absolute;bottom:0;left:0;right:0;z-index:2;
+    <div class="cn-auth-left-content" style="padding:3rem;position:absolute;bottom:0;left:0;right:0;z-index:3;
          background:linear-gradient(to top,rgba(8,14,28,0.95) 0%,rgba(8,14,28,0.6) 60%,transparent 100%);
          padding-bottom:3rem;">
         <h1 class="cn-auth-hero-headline cn-anim-slide-up">
-            Join the<br><span>Infrastructure.</span>
+            Join the<br><span class="cn-aurora-text">Infrastructure.</span>
         </h1>
         <p class="cn-auth-hero-sub cn-anim-slide-up cn-delay-200">
             Get instant access to distributed storage, SHA-256 deduplication, intelligent node routing, and enterprise-grade security.
@@ -252,95 +257,17 @@
     </div>
 </div>
 
-<!-- Three.js Hero (same as login) -->
+<!-- Three.js Hero — via CloudNestWebGL module (purple theme) -->
+<script th:src="@{/js/webgl-scene.js}"></script>
 <script>
-(function initHeroScene() {
-    const canvas = document.getElementById('heroCanvas');
-    if (!canvas || typeof THREE === 'undefined') return;
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x080E1C, 1);
-
-    // WebGL context loss recovery
-    canvas.addEventListener('webglcontextlost', (e) => {
-        e.preventDefault();
-        cancelAnimationFrame(animFrameId);
-    });
-    canvas.addEventListener('webglcontextrestored', () => {
-        animate();
-    });
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
-    camera.position.set(0, 2, 9);
-    function resize() {
-        renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-        camera.aspect = canvas.clientWidth / canvas.clientHeight;
-        camera.updateProjectionMatrix();
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof CloudNestWebGL !== 'undefined') {
+        CloudNestWebGL.HeroAuthScene('heroCanvas', { theme: 'purple' });
     }
-    resize();
-    window.addEventListener('resize', resize);
-    scene.add(new THREE.AmbientLight(0x8B5CF6, 0.3));
-    const light1 = new THREE.PointLight(0x8B5CF6, 2, 20);
-    light1.position.set(5, 5, 5);
-    scene.add(light1);
-    const light2 = new THREE.PointLight(0x3B82F6, 1.5, 15);
-    light2.position.set(-5, -3, 3);
-    scene.add(light2);
-    const nodes = [];
-    const geo = new THREE.IcosahedronGeometry(0.10, 1);
-    for (let i = 0; i < 35; i++) {
-        const mat = new THREE.MeshPhongMaterial({ color: 0x8B5CF6, emissive: 0x8B5CF6, emissiveIntensity: 0.4, transparent: true, opacity: 0.85 });
-        const mesh = new THREE.Mesh(geo, mat);
-        const theta = Math.random() * Math.PI * 2;
-        const phi   = Math.acos(2 * Math.random() - 1);
-        const r     = 2.5 + Math.random() * 3;
-        mesh.position.set(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta) * 0.6, r * Math.cos(phi));
-        mesh.userData = { speed: 0.5 + Math.random() * 1.5, offset: Math.random() * Math.PI * 2, base: 0.7 + Math.random() * 0.4 };
-        mesh.scale.setScalar(mesh.userData.base);
-        scene.add(mesh);
-        nodes.push(mesh);
-    }
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x8B5CF6, transparent: true, opacity: 0.10 });
-    for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-            if (nodes[i].position.distanceTo(nodes[j].position) < 2.8 && Math.random() > 0.5) {
-                scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([nodes[i].position, nodes[j].position]), edgeMat.clone()));
-            }
-        }
-    }
-    const pGeo = new THREE.BufferGeometry();
-    const pos = new Float32Array(1200 * 3);
-    for (let i = 0; i < pos.length; i++) pos[i] = (Math.random() - 0.5) * 16;
-    pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    scene.add(new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0x8B5CF6, size: 0.016, transparent: true, opacity: 0.4 })));
-    let mx = 0, my = 0;
-    document.addEventListener('mousemove', e => { mx = (e.clientX / window.innerWidth - 0.5) * 2; my = (e.clientY / window.innerHeight - 0.5) * 2; });
-    const clock = new THREE.Clock();
-    let animFrameId;
-    function animate() {
-        animFrameId = requestAnimationFrame(animate);
-
-        // Skip rendering when tab is hidden
-        if (document.hidden) return;
-
-        const t = clock.getElapsedTime();
-        nodes.forEach(n => n.scale.setScalar(n.userData.base + Math.sin(t * n.userData.speed + n.userData.offset) * 0.07));
-        scene.rotation.y = t * 0.05 + mx * 0.08;
-        scene.rotation.x = my * 0.04;
-        renderer.render(scene, camera);
-    }
-    animate();
-
-    // Pause/resume on tab visibility
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            cancelAnimationFrame(animFrameId);
-        } else {
-            animate();
-        }
-    });
-})();
+});
 </script>
+
+
 
 <script>
 function togglePassword(inputId, btn) {

@@ -21,6 +21,9 @@ public interface FolderRepository extends JpaRepository<Folder, Long> {
     // Find all root-level folders for a user (folders with no parent)
     List<Folder> findByUserAndParentIsNullAndIsDeletedFalseOrderByNameAsc(User user);
 
+    // Find ALL folders for a user (for the move dropdown)
+    List<Folder> findByUserAndIsDeletedFalseOrderByNameAsc(User user);
+
     // Find all sub-folders inside a specific parent folder
     List<Folder> findByUserAndParentIdAndIsDeletedFalseOrderByNameAsc(User user, Long parentId);
 

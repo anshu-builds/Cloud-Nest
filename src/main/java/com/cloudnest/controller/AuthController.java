@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * AuthController — Handles login, registration, and logout pages.
@@ -31,7 +32,8 @@ public class AuthController {
      * Spring Security handles the actual login POST processing.
      */
     @GetMapping("/login")
-    public String showLoginPage() {
+    public String showLoginPage(HttpServletRequest request) {
+        request.getSession(true);
         return "login"; // Resolves to templates/login.html
     }
 
@@ -39,7 +41,8 @@ public class AuthController {
      * GET /register — Show the registration form.
      */
     @GetMapping("/register")
-    public String showRegistrationPage(Model model) {
+    public String showRegistrationPage(Model model, HttpServletRequest request) {
+        request.getSession(true); // Force early session creation for CSRF token
         // Add an empty DTO for the form to bind to
         model.addAttribute("user", new UserRegistrationDto());
         return "register"; // Resolves to templates/register.html

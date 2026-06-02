@@ -11,7 +11,7 @@
     <link th:href="@{/css/design-system.css}" rel="stylesheet">
     <link th:href="@{/css/animations.css}" rel="stylesheet">
     <script src="https://unpkg.com/lucide@0.325.0/dist/umd/lucide.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <style>
         .cn-topology-layout {
@@ -21,12 +21,13 @@
             align-items: start;
         }
         .cn-topology-canvas-wrap {
-            background: var(--bg-card);
+            background: linear-gradient(135deg, var(--bg-card) 0%, rgba(11,17,32,0.98) 100%);
             border: 1px solid var(--border-default);
             border-radius: var(--radius-xl);
             overflow: hidden;
             position: relative;
-            height: 520px;
+            height: 580px;
+            box-shadow: var(--shadow-card-premium), var(--shadow-neon-blue);
         }
         #topologyCanvas {
             width: 100%;
@@ -144,25 +145,25 @@
 
     <!-- Metric Strip -->
     <div class="cn-metrics-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:var(--space-5);">
-        <div class="cn-metric-card cn-reveal">
+        <div class="cn-metric-card cn-glass-premium cn-holographic cn-reveal">
             <div class="cn-metric-icon green"><i data-lucide="server" style="width:17px;height:17px;"></i></div>
             <div class="cn-metric-value">3</div>
             <div class="cn-metric-label">Active Nodes</div>
             <div class="cn-metric-trend up"><i data-lucide="check-circle" style="width:12px;height:12px;"></i> All healthy</div>
         </div>
-        <div class="cn-metric-card cn-reveal cn-delay-100">
+        <div class="cn-metric-card cn-glass-premium cn-holographic cn-reveal cn-delay-100">
             <div class="cn-metric-icon blue"><i data-lucide="database" style="width:17px;height:17px;"></i></div>
             <div class="cn-metric-value">600<span style="font-size:var(--text-base);color:var(--text-muted);font-weight:500;"> GB</span></div>
             <div class="cn-metric-label">Total Capacity</div>
             <div class="cn-metric-trend neutral"><i data-lucide="hard-drive" style="width:12px;height:12px;"></i> 200 GB per node</div>
         </div>
-        <div class="cn-metric-card cn-reveal cn-delay-200">
+        <div class="cn-metric-card cn-glass-premium cn-holographic cn-reveal cn-delay-200">
             <div class="cn-metric-icon cyan"><i data-lucide="activity" style="width:17px;height:17px;"></i></div>
             <div class="cn-metric-value">12<span style="font-size:var(--text-base);color:var(--text-muted);font-weight:500;"> ms</span></div>
             <div class="cn-metric-label">Avg. Latency</div>
             <div class="cn-metric-trend up"><i data-lucide="zap" style="width:12px;height:12px;"></i> Low latency</div>
         </div>
-        <div class="cn-metric-card cn-reveal cn-delay-300">
+        <div class="cn-metric-card cn-glass-premium cn-holographic cn-reveal cn-delay-300">
             <div class="cn-metric-icon yellow"><i data-lucide="git-branch" style="width:17px;height:17px;"></i></div>
             <div class="cn-metric-value">6</div>
             <div class="cn-metric-label">Active Links</div>
@@ -398,234 +399,16 @@
 </div><!-- /.cn-workspace -->
 
 <!-- ═══════════════ THREE.JS TOPOLOGY SCENE ═══════════════ -->
+<script th:src="@{/js/webgl-scene.js}"></script>
 <script th:inline="javascript">
-(function initTopology() {
-    const canvas = document.getElementById('topologyCanvas');
-    if (!canvas || typeof THREE === 'undefined') return;
-
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x0B1120, 1);
-
-    // WebGL context loss recovery
-    canvas.addEventListener('webglcontextlost', (e) => {
-        e.preventDefault();
-        cancelAnimationFrame(animFrameId);
-    });
-    canvas.addEventListener('webglcontextrestored', () => {
-        animate();
-    });
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
-    camera.position.set(0, 1.5, 7);
-
-    function resize() {
-        const w = canvas.clientWidth, h = canvas.clientHeight;
-        renderer.setSize(w, h, false);
-        camera.aspect = w / h;
-        camera.updateProjectionMatrix();
+// Boot the PBR topology scene from the centralized module
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof CloudNestWebGL !== 'undefined') {
+        CloudNestWebGL.NodeTopologyScene('topologyCanvas', {});
     }
-    resize();
-    new ResizeObserver(resize).observe(canvas);
-
-    // Lights
-    scene.add(new THREE.AmbientLight(0x3B82F6, 0.4));
-    const pLight = new THREE.PointLight(0x3B82F6, 3, 20);
-    pLight.position.set(0, 4, 4);
-    scene.add(pLight);
-    const pLight2 = new THREE.PointLight(0x8B5CF6, 2, 15);
-    pLight2.position.set(-4, -2, 2);
-    scene.add(pLight2);
-
-    // Node definitions
-    const nodeData = [
-        { name: 'Alpha', pos: [-2.5, 1, 0],   color: 0x3B82F6, glow: 0x3B82F6 },
-        { name: 'Beta',  pos: [ 2.5, 1, 0],   color: 0x8B5CF6, glow: 0x8B5CF6 },
-        { name: 'Gamma', pos: [ 0,  -2, 0.5], color: 0x22C55E, glow: 0x22C55E },
-    ];
-
-    const nodeGeometry = new THREE.IcosahedronGeometry(0.45, 2);
-    const nodeMeshes   = [];
-    const nodeLabels   = [
-        document.getElementById('labelAlpha'),
-        document.getElementById('labelBeta'),
-        document.getElementById('labelGamma'),
-    ];
-
-    nodeData.forEach((nd, i) => {
-        const mat = new THREE.MeshPhongMaterial({
-            color: nd.color,
-            emissive: nd.glow,
-            emissiveIntensity: 0.6,
-            shininess: 80,
-            transparent: true,
-            opacity: 0.95,
-        });
-        const mesh = new THREE.Mesh(nodeGeometry, mat);
-        mesh.position.set(...nd.pos);
-        mesh.userData = { index: i, name: nd.name, baseScale: 1 };
-        scene.add(mesh);
-        nodeMeshes.push(mesh);
-
-        // Glow ring around each node
-        const ringGeo = new THREE.RingGeometry(0.55, 0.62, 32);
-        const ringMat = new THREE.MeshBasicMaterial({ color: nd.color, transparent: true, opacity: 0.25, side: THREE.DoubleSide });
-        const ring = new THREE.Mesh(ringGeo, ringMat);
-        ring.rotation.x = Math.PI / 2;
-        ring.position.set(...nd.pos);
-        scene.add(ring);
-
-        if (nodeLabels[i]) nodeLabels[i].style.display = 'block';
-    });
-
-    // Edges between nodes
-    const edgePairs = [[0,1],[1,2],[0,2]];
-    const edges = [];
-    edgePairs.forEach(([a, b]) => {
-        const points = [
-            new THREE.Vector3(...nodeData[a].pos),
-            new THREE.Vector3(...nodeData[b].pos),
-        ];
-        const geo = new THREE.BufferGeometry().setFromPoints(points);
-        const mat = new THREE.LineBasicMaterial({ color: 0x3B82F6, transparent: true, opacity: 0.2 });
-        const line = new THREE.Line(geo, mat);
-        scene.add(line);
-        edges.push({ line, a, b, mat });
-    });
-
-    // Ambient background particles
-    const pGeo = new THREE.BufferGeometry();
-    const pPos = new Float32Array(600 * 3);
-    for (let i = 0; i < pPos.length; i++) pPos[i] = (Math.random() - 0.5) * 14;
-    pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-    scene.add(new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0x3B82F6, size: 0.022, transparent: true, opacity: 0.3 })));
-
-    // Data packets — small spheres traveling along edges
-    const packetGeo = new THREE.SphereGeometry(0.07, 8, 8);
-    const packets = [];
-    edgePairs.forEach(([a, b]) => {
-        const packetMat = new THREE.MeshBasicMaterial({ color: 0x60A5FA, transparent: true, opacity: 0.9 });
-        const packet = new THREE.Mesh(packetGeo, packetMat);
-        packet.userData = { a, b, t: Math.random(), speed: 0.004 + Math.random() * 0.004, dir: 1 };
-        scene.add(packet);
-        packets.push(packet);
-    });
-
-    // Mouse orbit
-    let isDragging = false, lastMouse = { x: 0, y: 0 };
-    let orbitX = 0, orbitY = 0, targetX = 0, targetY = 0;
-
-    canvas.addEventListener('mousedown', e => { isDragging = true; lastMouse = { x: e.clientX, y: e.clientY }; });
-    window.addEventListener('mouseup', () => isDragging = false);
-    window.addEventListener('mousemove', e => {
-        if (!isDragging) return;
-        const dx = e.clientX - lastMouse.x;
-        const dy = e.clientY - lastMouse.y;
-        targetX += dy * 0.005;
-        targetY += dx * 0.005;
-        lastMouse = { x: e.clientX, y: e.clientY };
-    });
-
-    // Raycaster for node click
-    const raycaster = new THREE.Raycaster();
-    const mouse2d  = new THREE.Vector2();
-    canvas.addEventListener('click', e => {
-        const rect = canvas.getBoundingClientRect();
-        mouse2d.x = ((e.clientX - rect.left) / rect.width)  * 2 - 1;
-        mouse2d.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-        raycaster.setFromCamera(mouse2d, camera);
-        const hits = raycaster.intersectObjects(nodeMeshes);
-        if (hits.length) {
-            selectNode(hits[0].object.userData.index);
-        }
-    });
-
-    // Selected node index
-    window._selectedNode = 0;
-
-    // Update label positions
-    function updateLabels() {
-        nodeMeshes.forEach((mesh, i) => {
-            if (!nodeLabels[i]) return;
-            const pos = mesh.position.clone().project(camera);
-            const x = (pos.x + 1) / 2 * canvas.clientWidth;
-            const y = (1 - pos.y) / 2 * canvas.clientHeight;
-            nodeLabels[i].style.left = x + 'px';
-            nodeLabels[i].style.top  = y + 'px';
-        });
-    }
-
-    const clock = new THREE.Clock();
-
-    // Pre-allocate reusable vectors (avoid GC pressure in animation loop)
-    const _vecA = new THREE.Vector3();
-    const _vecB = new THREE.Vector3();
-
-    let animFrameId;
-    function animate() {
-        animFrameId = requestAnimationFrame(animate);
-
-        // Skip rendering when tab is hidden
-        if (document.hidden) return;
-
-        const t = clock.getElapsedTime();
-
-        // Smooth orbit
-        orbitX += (targetX - orbitX) * 0.08;
-        orbitY += (targetY - orbitY) * 0.08;
-        // Slow auto-rotate when not dragging
-        if (!isDragging) targetY += 0.003;
-
-        scene.rotation.y = orbitY;
-        scene.rotation.x = orbitX;
-
-        // Pulse nodes
-        nodeMeshes.forEach((mesh, i) => {
-            const pulse = 1 + Math.sin(t * 1.5 + i * 1.2) * 0.06;
-            mesh.scale.setScalar(i === window._selectedNode ? pulse * 1.25 : pulse);
-            // Brighten selected
-            mesh.material.emissiveIntensity = i === window._selectedNode
-                ? 1.0 + Math.sin(t * 3) * 0.3
-                : 0.5 + Math.sin(t * 1.5 + i) * 0.15;
-        });
-
-        // Animate edge opacity
-        edges.forEach(({ mat }, i) => {
-            mat.opacity = 0.15 + Math.sin(t * 0.8 + i) * 0.1;
-        });
-
-        // Move data packets along edges
-        packets.forEach(pkt => {
-            pkt.userData.t += pkt.userData.speed * pkt.userData.dir;
-            if (pkt.userData.t >= 1) { pkt.userData.t = 1; pkt.userData.dir = -1; }
-            if (pkt.userData.t <= 0) { pkt.userData.t = 0; pkt.userData.dir =  1; }
-            const { a, b, t: pt } = pkt.userData;
-            _vecA.set(...nodeData[a].pos);
-            _vecB.set(...nodeData[b].pos);
-            pkt.position.lerpVectors(_vecA, _vecB, pt);
-            pkt.material.opacity = 0.5 + Math.sin(t * 4 + pt * 10) * 0.4;
-        });
-
-        updateLabels();
-        renderer.render(scene, camera);
-    }
-    animate();
-
-    // Pause/resume on tab visibility
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            cancelAnimationFrame(animFrameId);
-        } else {
-            animate();
-        }
-    });
-
-    // Expose selectNode globally
-    window.selectNodeMesh = (i) => {
-        nodeMeshes.forEach((m, j) => { m.scale.setScalar(j === i ? 1.25 : 1); });
-    };
-})();
+    selectNode(0);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+});
 
 // Node data for the detail panel
 const NODE_INFO = [
@@ -681,13 +464,7 @@ setInterval(() => {
     log.insertBefore(row, log.firstChild);
     if (log.children.length > 4) log.removeChild(log.lastChild);
 }, 1800);
-
-document.addEventListener('DOMContentLoaded', () => {
-    selectNode(0);
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-});
 </script>
-
 <div th:replace="~{fragments/header :: appShellEnd}"></div>
 </body>
 </html>

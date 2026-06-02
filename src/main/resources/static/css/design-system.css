@@ -76,6 +76,30 @@
   --gradient-blue-glow:  linear-gradient(180deg, rgba(59,130,246,0.15) 0%, transparent 100%);
   --gradient-card-top:   linear-gradient(180deg, rgba(59,130,246,0.06) 0%, transparent 50%);
 
+  /* ── Aurora & Neon Gradients (NEW) ── */
+  --gradient-aurora:       linear-gradient(135deg, #3B82F6 0%, #8B5CF6 35%, #EC4899 65%, #06B6D4 100%);
+  --gradient-neon-blue:    linear-gradient(135deg, #00D4FF 0%, #3B82F6 100%);
+  --gradient-neon-purple:  linear-gradient(135deg, #A78BFA 0%, #EC4899 100%);
+  --gradient-cosmic:       radial-gradient(ellipse at 30% 40%, #1a1050 0%, #080E1C 70%);
+  --gradient-mesh-blue:    radial-gradient(at 40% 20%, hsla(220,100%,65%,0.15) 0px, transparent 50%),
+                           radial-gradient(at 80% 0%,   hsla(260,100%,70%,0.12) 0px, transparent 50%),
+                           radial-gradient(at 0%  50%,  hsla(200,100%,60%,0.10) 0px, transparent 50%);
+
+  /* ── Premium Glassmorphism (NEW) ── */
+  --glass-premium:         rgba(255,255,255,0.055);
+  --glass-premium-hover:   rgba(255,255,255,0.085);
+  --glass-border-light:    rgba(255,255,255,0.10);
+  --glass-border-strong:   rgba(255,255,255,0.18);
+  --glass-blur:            blur(24px) saturate(180%) brightness(1.05);
+
+  /* ── Neon Glow Shadows (NEW) ── */
+  --shadow-neon-blue:    0 0 12px rgba(59,130,246,0.6),  0 0 40px rgba(59,130,246,0.25), 0 0 80px rgba(59,130,246,0.10);
+  --shadow-neon-purple:  0 0 12px rgba(139,92,246,0.6), 0 0 40px rgba(139,92,246,0.25), 0 0 80px rgba(139,92,246,0.10);
+  --shadow-neon-cyan:    0 0 12px rgba(34,211,238,0.55), 0 0 40px rgba(34,211,238,0.20);
+  --shadow-neon-green:   0 0 12px rgba(34,197,94,0.55),  0 0 40px rgba(34,197,94,0.20);
+  --shadow-glow-blue-lg: 0 0 30px rgba(59,130,246,0.5),  0 0 80px rgba(59,130,246,0.2), 0 4px 24px rgba(0,0,0,0.5);
+  --shadow-card-premium: 0 4px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.06) inset, 0 0 0 1px rgba(59,130,246,0.08);
+
   /* ── Typography ── */
   --font-sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
@@ -138,6 +162,7 @@
   --shadow-glow-blue:   0 0 20px rgba(59,130,246,0.35), 0 0 60px rgba(59,130,246,0.15);
   --shadow-glow-purple: 0 0 20px rgba(139,92,246,0.35), 0 0 60px rgba(139,92,246,0.15);
   --shadow-glow-green:  0 0 20px rgba(34,197,94,0.35),  0 0 60px rgba(34,197,94,0.10);
+  --shadow-inner-glow:  inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.2);
 
   /* ── Transitions ── */
   --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
@@ -157,6 +182,7 @@
   --insights-panel-width: 260px;
 
   /* ── Z-Index ── */
+  --z-canvas-bg: -1;
   --z-base:      1;
   --z-dropdown:  100;
   --z-sticky:    200;
@@ -2640,4 +2666,296 @@ img, svg, canvas {
     .cn-public-shell { padding: var(--space-4); }
     .cn-public-state { padding: var(--space-6) var(--space-4); }
     .cn-public-meta { grid-template-columns: 1fr; }
+}
+
+/* ============================================================================
+   WEBGL GLOBAL BACKGROUND CANVAS
+   ============================================================================ */
+#cnGlobalBgCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: var(--z-canvas-bg);
+    pointer-events: none;
+    opacity: 0.85;
+}
+
+/* ============================================================================
+   GLASSMORPHISM PREMIUM CARD
+   ============================================================================ */
+.cn-glass-premium {
+    background: var(--glass-premium);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border-light);
+    box-shadow: var(--shadow-card-premium);
+    transition: background 0.3s var(--ease-in-out), border-color 0.3s var(--ease-in-out),
+                box-shadow 0.3s var(--ease-in-out), transform 0.3s var(--ease-spring);
+}
+
+.cn-glass-premium:hover {
+    background: var(--glass-premium-hover);
+    border-color: var(--glass-border-strong);
+    box-shadow: var(--shadow-neon-blue), var(--shadow-card-premium);
+    transform: translateY(-2px);
+}
+
+/* ============================================================================
+   NEON BORDER (Animated Rainbow/Conic Gradient)
+   ============================================================================ */
+.cn-neon-border {
+    position: relative;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+    isolation: isolate;
+}
+
+.cn-neon-border::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: conic-gradient(from var(--neon-angle, 0deg), #3B82F6, #8B5CF6, #EC4899, #06B6D4, #3B82F6);
+    z-index: -1;
+    animation: cn-neon-rotate 4s linear infinite;
+    opacity: 0.7;
+}
+
+@keyframes cn-neon-rotate {
+    to { --neon-angle: 360deg; }
+}
+
+/* Fallback without Houdini @property — static gradient */
+@supports not (background: conic-gradient(from 0deg, red, blue)) {
+    .cn-neon-border::before {
+        background: var(--gradient-aurora);
+        animation: none;
+    }
+}
+
+/* ============================================================================
+   AURORA GRADIENT TEXT
+   ============================================================================ */
+.cn-aurora-text {
+    background: var(--gradient-aurora);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    background-size: 200% auto;
+    animation: cn-aurora-shift 6s ease-in-out infinite;
+}
+
+/* ============================================================================
+   HOLOGRAPHIC SHIMMER (metric card accent)
+   ============================================================================ */
+.cn-holographic {
+    position: relative;
+    overflow: hidden;
+}
+
+.cn-holographic::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        105deg,
+        transparent 20%,
+        rgba(255,255,255,0.04) 30%,
+        rgba(59,130,246,0.06) 40%,
+        rgba(139,92,246,0.06) 50%,
+        rgba(255,255,255,0.04) 60%,
+        transparent 70%
+    );
+    background-size: 200% 100%;
+    animation: cn-holographic-shimmer 4s ease-in-out infinite;
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+/* ============================================================================
+   CSS 3D TILT CARD
+   ============================================================================ */
+.cn-tilt-card {
+    transform-style: preserve-3d;
+    transition: transform 0.4s var(--ease-spring), box-shadow 0.4s var(--ease-in-out);
+}
+
+.cn-tilt-card:hover {
+    transform: perspective(800px) rotateY(3deg) rotateX(-2deg) translateY(-3px);
+    box-shadow: var(--shadow-neon-blue), var(--shadow-lg);
+}
+
+/* ============================================================================
+   ENHANCED METRIC CARD
+   ============================================================================ */
+.cn-metric-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.cn-metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.cn-metric-card:hover::before {
+    opacity: 1;
+}
+
+/* ============================================================================
+   ENHANCED BUTTON GLOW
+   ============================================================================ */
+.cn-btn-primary {
+    position: relative;
+    overflow: hidden;
+}
+
+.cn-btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+.cn-btn-primary:hover {
+    box-shadow: var(--shadow-neon-blue);
+}
+
+/* ============================================================================
+   SCANLINE OVERLAY (Auth page visual depth)
+   ============================================================================ */
+.cn-scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* ============================================================================
+   DASHBOARD BANNER CANVAS
+   ============================================================================ */
+.cn-dashboard-banner {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    margin-bottom: var(--space-6);
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-card-premium);
+}
+
+#dashboardBannerCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.cn-dashboard-banner-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 var(--space-8);
+    background: linear-gradient(90deg, rgba(8,14,28,0.75) 0%, rgba(8,14,28,0.3) 60%, transparent 100%);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.cn-dashboard-banner-title {
+    font-size: var(--text-3xl);
+    font-weight: var(--fw-black);
+    letter-spacing: -0.04em;
+    background: var(--gradient-aurora);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    background-size: 200% auto;
+    animation: cn-aurora-shift 5s ease-in-out infinite;
+    line-height: 1.1;
+}
+
+.cn-dashboard-banner-sub {
+    font-size: var(--text-sm);
+    color: rgba(255,255,255,0.55);
+    margin-top: var(--space-2);
+    font-family: var(--font-mono);
+}
+
+/* ============================================================================
+   TERMINAL TICKER (Auth page bottom overlay)
+   ============================================================================ */
+.cn-terminal-ticker {
+    position: absolute;
+    bottom: var(--space-16);
+    left: var(--space-8);
+    right: var(--space-8);
+    z-index: 3;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.cn-ticker-prefix {
+    color: var(--blue-400);
+    font-weight: var(--fw-semibold);
+}
+
+.cn-ticker-cursor {
+    display: inline-block;
+    width: 6px;
+    height: 12px;
+    background: var(--blue-400);
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: cn-cursor-blink 1s step-end infinite;
+    border-radius: 1px;
+    opacity: 0.8;
+}
+
+/* ============================================================================
+   SIDEBAR GRADIENT MESH BACKGROUND
+   ============================================================================ */
+.cn-sidebar {
+    background: linear-gradient(
+        180deg,
+        var(--bg-surface) 0%,
+        color-mix(in srgb, var(--bg-surface) 95%, #3B82F6 5%) 50%,
+        var(--bg-surface) 100%
+    );
+}
+
+/* Fallback for browsers without color-mix */
+@supports not (background: color-mix(in srgb, red, blue)) {
+    .cn-sidebar {
+        background: var(--bg-surface);
+    }
+}
+
+/* ============================================================================
+   TOPBAR ENHANCED GLASS
+   ============================================================================ */
+.cn-topbar {
+    background: rgba(11, 17, 32, 0.85);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
 }

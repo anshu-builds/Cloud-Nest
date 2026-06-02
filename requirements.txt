@@ -1,7 +1,7 @@
 # Software Requirements for CloudNest
 
 Java Development Kit (JDK) 21 or higher
-MySQL Server 8.0 or higher
+PostgreSQL Server 12 or higher
 Apache Maven 3.8.x or higher
 IntelliJ IDEA (Community or Ultimate) or Eclipse IDE
 Modern Web Browser (Chrome, Firefox, Edge, Safari)
@@ -12,10 +12,11 @@ Spring Web (MVC)
 Spring Data JPA
 Spring Security
 Thymeleaf (with Spring Security extras)
-MySQL Connector/J
+PostgreSQL JDBC Driver
 Lombok
+Spring Boot Actuator
 
 # Frontend Dependencies (Included via CDN)
-Bootstrap 5.3.3
-Bootstrap Icons 1.11.3
+Lucide Icons
+Three.js (for WebGL 3D backgrounds)
 Google Fonts (Inter)

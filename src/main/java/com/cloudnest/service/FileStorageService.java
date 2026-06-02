@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -47,16 +48,21 @@ public class FileStorageService {
     private final FileRepository fileRepository;
     private final FolderRepository folderRepository;
     private final StorageNodeService storageNodeService;
+    private final SharedLinkService sharedLinkService;
+
+    private static final Set<String> BLOCKED_EXTENSIONS = Set.of(".exe", ".bat", ".sh", ".ps1", ".cmd");
 
     @org.springframework.beans.factory.annotation.Value("${cloudnest.storage.quota-bytes:1073741824}")
     private long quotaBytes;
 
     public FileStorageService(FileRepository fileRepository,
                               FolderRepository folderRepository,
-                              StorageNodeService storageNodeService) {
+                              StorageNodeService storageNodeService,
+                              @org.springframework.context.annotation.Lazy SharedLinkService sharedLinkService) {
         this.fileRepository = fileRepository;
         this.folderRepository = folderRepository;
         this.storageNodeService = storageNodeService;
+        this.sharedLinkService = sharedLinkService;
     }
 
     /**
@@ -83,7 +89,10 @@ public class FileStorageService {
         String originalName = file.getOriginalFilename();
         String extension = "";
         if (originalName != null && originalName.contains(".")) {
-            extension = originalName.substring(originalName.lastIndexOf("."));
+            extension = originalName.substring(originalName.lastIndexOf(".")).toLowerCase();
+            if (BLOCKED_EXTENSIONS.contains(extension)) {
+                throw new StorageException("File type not allowed for security reasons: " + extension);
+            }
         }
 
         // --- HASH-BEFORE-WRITE DEDUPLICATION ---
@@ -183,6 +192,10 @@ public class FileStorageService {
         FileEntity fileEntity = fileRepository.findById(fileId)
                 .orElseThrow(() -> new FileNotFoundException("File not found with ID: " + fileId));
 
+        if (fileEntity.isDeleted()) {
+            throw new FileNotFoundException("File not found");
+        }
+
         // Security check: ensure the user owns this file
         if (!fileEntity.getUser().getId().equals(user.getId())) {
             throw new FileNotFoundException("File not found");
@@ -205,6 +218,10 @@ public class FileStorageService {
     public FileEntity getFileEntity(Long fileId, User user) {
         FileEntity fileEntity = fileRepository.findById(fileId)
                 .orElseThrow(() -> new FileNotFoundException("File not found with ID: " + fileId));
+
+        if (fileEntity.isDeleted()) {
+            throw new FileNotFoundException("File not found");
+        }
 
         if (!fileEntity.getUser().getId().equals(user.getId())) {
             throw new FileNotFoundException("File not found");
@@ -265,6 +282,7 @@ public class FileStorageService {
             }
         }
 
+        sharedLinkService.deleteLinksForFile(fileEntity.getId());
         fileRepository.delete(fileEntity);
     }
 
@@ -302,6 +320,8 @@ public class FileStorageService {
                 throw new StorageException("Failed to delete file from disk", e);
             }
         }
+        
+        sharedLinkService.deleteLinksForFile(fileEntity.getId());
         fileRepository.delete(fileEntity);
     }
 

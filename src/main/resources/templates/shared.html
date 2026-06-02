@@ -13,7 +13,8 @@
 </head>
 <body class="cn-auth-body">
 <main class="cn-public-shell">
-    <section class="cn-public-card cn-reveal">
+    <!-- No cn-reveal here: this standalone page doesn't load app.js which runs the IntersectionObserver -->
+    <section class="cn-public-card" style="animation: cn-fade-in 0.6s ease both;">
         <div class="cn-public-brand">
             <div class="cn-logo-mark" aria-hidden="true">
                 <i data-lucide="cloud" style="width:22px;height:22px;"></i>

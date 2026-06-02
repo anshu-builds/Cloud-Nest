@@ -42,6 +42,8 @@
         <button class="cn-alert-close" onclick="this.closest('.cn-alert').remove()">✕</button>
     </div>
 
+
+
     <!-- ── Three-Column Layout ── -->
     <div class="cn-three-col">
 
@@ -51,7 +53,7 @@
             <!-- ── Section: Welcome Header ── -->
             <div class="cn-flex cn-justify-between cn-items-center cn-mb-6 cn-reveal">
                 <div>
-                    <h1 style="font-size:var(--text-2xl);font-weight:var(--fw-bold);letter-spacing:-0.03em;color:var(--text-primary);margin-bottom:4px;">
+                    <h1 class="cn-aurora-text" style="font-size:var(--text-2xl);font-weight:var(--fw-bold);letter-spacing:-0.03em;margin-bottom:4px;">
                         Command Center
                     </h1>
                     <p style="font-size:var(--text-sm);color:var(--text-muted);">
@@ -74,7 +76,7 @@
             <div class="cn-metrics-grid cn-stagger">
 
                 <!-- Total Files -->
-                <div class="cn-metric-card cn-reveal">
+                <div class="cn-metric-card cn-glass-premium cn-tilt-card cn-holographic cn-reveal">
                     <div class="cn-metric-card-glow" style="background:var(--blue-500);"></div>
                     <div class="cn-metric-icon blue">
                         <i data-lucide="files" style="width:17px;height:17px;"></i>
@@ -91,7 +93,7 @@
                 </div>
 
                 <!-- Storage Used -->
-                <div class="cn-metric-card cn-reveal cn-delay-100">
+                <div class="cn-metric-card cn-glass-premium cn-tilt-card cn-holographic cn-reveal cn-delay-100">
                     <div class="cn-metric-card-glow" style="background:var(--purple-500);"></div>
                     <div class="cn-metric-icon purple">
                         <i data-lucide="hard-drive" style="width:17px;height:17px;"></i>
@@ -105,7 +107,7 @@
                 </div>
 
                 <!-- Total Folders -->
-                <div class="cn-metric-card cn-reveal cn-delay-200">
+                <div class="cn-metric-card cn-glass-premium cn-tilt-card cn-holographic cn-reveal cn-delay-200">
                     <div class="cn-metric-card-glow" style="background:var(--success);"></div>
                     <div class="cn-metric-icon green">
                         <i data-lucide="folder" style="width:17px;height:17px;"></i>
@@ -122,7 +124,7 @@
                 </div>
 
                 <!-- Active Nodes (simulated) -->
-                <div class="cn-metric-card cn-reveal cn-delay-300">
+                <div class="cn-metric-card cn-glass-premium cn-tilt-card cn-holographic cn-reveal cn-delay-300">
                     <div class="cn-metric-card-glow" style="background:var(--cyan-500);"></div>
                     <div class="cn-metric-icon cyan">
                         <i data-lucide="server" style="width:17px;height:17px;"></i>
@@ -486,6 +488,8 @@
 
 <!-- ═══════════════════════ APP SHELL END ═══════════════════════ -->
 <div th:replace="~{fragments/header :: appShellEnd}"></div>
+
+
 
 </body>
 </html>

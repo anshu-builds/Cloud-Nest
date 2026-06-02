@@ -355,7 +355,8 @@ Cloud-Nest/
 
 | Name | Role | Contributions |
 |------|------|---------------|
-| **Anmol Raj** | 👑 Team Lead · Backend Developer · Frontend Designer | Project architecture, Spring Boot backend, REST APIs, security, database design, UI/UX design, CSS design system, Thymeleaf templates, responsive layouts |
+| **Anshu Jaiswal** | 👑 Team Lead · Backend Developer · Frontend Designer | Project architecture, Spring Boot backend, REST APIs, database design, security, UI/UX design system, deployment |
+| **Anmol Raj** | 🎨 Frontend Developer | Frontend development, Thymeleaf template implementation |
 | **Javasingh** | 🧪 QA Tester | Testing, quality assurance, bug tracking, integration test suites |
 
 ---

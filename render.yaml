@@ -1,0 +1,23 @@
+# =========================================================================
+# CloudNest — Render Blueprint
+# =========================================================================
+# This file tells Render how to deploy the application.
+# Docs: https://render.com/docs/blueprint-spec
+# =========================================================================
+
+services:
+  - type: web
+    name: cloudnest
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_USERNAME
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod

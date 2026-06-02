@@ -1,0 +1,40 @@
+# =========================================================================
+# CloudNest — Docker Ignore
+# =========================================================================
+# Files/folders that should NOT be copied into the Docker image.
+# This reduces build context size and speeds up builds.
+# =========================================================================
+
+# Git
+.git
+.gitignore
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Build output (we rebuild inside Docker)
+target/
+
+# Runtime storage (created fresh in container)
+storage/
+
+# Environment files (secrets should be env vars, not files)
+.env
+.env.*
+
+# Documentation
+Doc/
+README.md
+LICENSE
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Maven wrapper (we use the Maven image directly)
+.mvn/
+mvnw
+mvnw.cmd

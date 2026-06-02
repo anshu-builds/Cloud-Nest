@@ -351,6 +351,13 @@ Cloud-Nest/
 └── README.md
 ```
 
+## 👥 Team
+
+| Name | Role | Contributions |
+|------|------|---------------|
+| **Anmol Raj** | 🎨 Frontend Developer | UI/UX design, Thymeleaf templates, CSS design system, animations, responsive layouts |
+| **Javasingh** | 🧪 QA Tester | Testing, quality assurance, bug tracking, integration test suites |
+
 ---
 
 ## 🤝 Contributing
